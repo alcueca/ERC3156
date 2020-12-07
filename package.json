@@ -1,0 +1,64 @@
+{
+  "name": "erc20flash",
+  "version": "0.0.1",
+  "description": "Solidity contracts implementing flash lending",
+  "author": "Alberto Cuesta Cañada",
+  "engines": {
+    "node": ">= 10.12.0",
+    "npm": ">= 6.4.0",
+    "yarn": ">= 1.10.0"
+  },
+  "files": [
+    "/contracts/ERC20FlashLoan.sol",
+    "/contracts/ERC20FlashMint.sol"
+  ],
+  "keywords": [
+    "solidity",
+    "ethereum",
+    "smart",
+    "contracts",
+    "security"
+  ],
+  "scripts": {
+    "build": "buidler compile",
+    "test": "buidler test test/*.ts",
+    "ganache": "./scripts/ganache.sh",
+    "deploy:ganache": "yarn ganache && truffle migrate",
+    "coverage": "buidler coverage --network coverage --temp build --testfiles 'test/*.ts'",
+    "lint:js": "prettier ./test/**/*.js --write",
+    "lint:sol": "solhint -f table contracts/**/*.sol"
+  },
+  "dependencies": {
+    "@openzeppelin/contracts": "3.3.0"
+  },
+  "devDependencies": {
+    "@nomiclabs/buidler": "^1.3.8",
+    "@nomiclabs/buidler-truffle5": "^1.3.4",
+    "@nomiclabs/buidler-web3": "^1.3.4",
+    "@openzeppelin/contracts": "3.3.0",
+    "@openzeppelin/test-helpers": "^0.5.6",
+    "@truffle/hdwallet-provider": "^1.0.40",
+    "@types/mocha": "^8.0.0",
+    "buidler-gas-reporter": "0.1.4-beta.4",
+    "chai": "4.2.0",
+    "ethereumjs-util": "^7.0.3",
+    "ethers": "^5.0.7",
+    "ganache-time-traveler": "^1.0.14",
+    "mocha": "^7.1.0",
+    "prettier": "^2.0.5",
+    "solhint": "^3.2.0",
+    "solidity-coverage": "^0.7.9",
+    "truffle": "^5.1.39",
+    "truffle-typings": "^1.0.8",
+    "ts-node": "^8.10.2",
+    "typescript": "^3.9.7"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/albertocuestacanada/ERC20Flash.git"
+  },
+  "license": "GPL-3.0-or-later",
+  "bugs": {
+    "url": "https://github.com/albertocuestacanada/ERC20Flash/issues"
+  },
+  "homepage": "https://github.com/albertocuestacanada/ERC20Flash"}
