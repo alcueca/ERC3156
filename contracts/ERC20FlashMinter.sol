@@ -2,7 +2,6 @@
 pragma solidity ^0.7.5;
 
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
-import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/math/SafeMath.sol";
 
 
@@ -12,16 +11,14 @@ interface flashBorrowerLike {
 
 /**
  * @author Alberto Cuesta Cañada
- * @dev Extension of {ERC20} that allows flash lending.
+ * @dev Extension of {ERC20} that allows flash minting.
  */
-contract ERC20FlashLoan is ERC20 {
+contract ERC20FlashMinter is ERC20 {
     using SafeMath for uint256;
 
-    IERC20 public immutable asset;
     uint256 public fee;
 
-    constructor(string memory name, string memory symbol, IERC20 asset_, uint256 fee_) ERC20(name, symbol) {
-        asset = asset_;
+    constructor (string memory name, string memory symbol, uint256 fee_) ERC20(name, symbol) {
         fee = fee_;
     }
 
@@ -32,10 +29,9 @@ contract ERC20FlashLoan is ERC20 {
      * @param data A data parameter to be passed on to the `receiver` for any custom use.
      */
     function flashLoan(address receiver, uint256 value, bytes calldata data) external {
-        uint256 _fee = value.div(fee);
-        uint256 supplyTarget = totalSupply().add(_fee);
-        asset.transfer(receiver, value);
+        uint256 _fee = fee == type(uint256).max ? 0 : value.div(fee);
+        _mint(receiver, value);
         flashBorrowerLike(receiver).onFlashLoan(msg.sender, value, _fee, data);
-        require(totalSupply() >= supplyTarget);
+        _burn(address(this), value.add(_fee));
     }
 }

@@ -6,16 +6,18 @@ The contracts included inherit from OpenZeppelin's ERC20.
 
 ## How to Use
 
-`ERC20FlashLoan` and `ERC20FlashMint` are `ERC20` contracts. You can just inherit from them and you are done from the smart contracts point of view.
+`ERC20FlashMinter` is an `ERC20` contract with flash minting capabilities.
 
 ```
-contract MyContract is ERC20FlashMint {
+contract MyContract is ERC20FlashMinter {
 
-    constructor (string memory _name, string memory _symbol, uint256 _fee) public ERC20FlashMint(_name, _symbol, _fee) {...}
+    constructor (string memory _name, string memory _symbol, uint256 _fee) public ERC20FlashMinter(_name, _symbol, _fee) {...}
 
     ...
 }
 ```
+
+`FlashLender` uses an `ERC20` contract as currency and has flash lending capabilities.
 
 ```
 contract MyContract is ERC20FlashLoan {
@@ -26,4 +28,4 @@ contract MyContract is ERC20FlashLoan {
 }
 ```
 
-The `_fee` parameter is a divisor to be applied on the flash loaned values. The `receiver` of the `flashLoan` will have to pay back `value + value/fee`.
+The `_fee` parameter is a divisor to be applied on the flash loaned values. The `receiver` of the `flashLoan` will have to pay back `value + value/fee`. Set the `_fee` to 2 ** 256 - 1 (type(uint256).max) to charge no fees.

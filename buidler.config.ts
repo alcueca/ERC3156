@@ -14,7 +14,7 @@ export default {
         },
     },
     gasReporter: {
-        enabled: true
+        enabled: false
     },
     paths: {
         artifacts: "./build",
