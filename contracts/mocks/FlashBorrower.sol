@@ -4,7 +4,7 @@ import "@nomiclabs/buidler/console.sol";
 
 
 interface FlashLenderLike {
-    function flashLoan(address receiver, uint256 value, bytes calldata) external;
+    function flashLoan(address receiver, address token, uint256 value, bytes calldata) external;
 }
 
 interface ERC20Like {
@@ -28,7 +28,8 @@ contract FlashBorrower {
 
     receive() external payable {}
 
-    function onFlashLoan(address user, uint256 value, uint256 fee, bytes calldata data) external {
+    function onFlashLoan(address user, address token, uint256 value, uint256 fee, bytes calldata data) external {
+        require(token == address(currency), "FlashBorrower: unsupported currency");
         (Action action) = abi.decode(data, (Action)); // Use this to unpack arbitrary data
         flashUser = user;
         flashValue = value;
@@ -47,18 +48,18 @@ contract FlashBorrower {
     function flashBorrow(address lender, uint256 value) public {
         // Use this to pack arbitrary data to `onFlashLoan`
         bytes memory data = abi.encode(Action.NORMAL);
-        FlashLenderLike(lender).flashLoan(address(this), value, data);
+        FlashLenderLike(lender).flashLoan(address(this), address(currency), value, data);
     }
 
     function flashBorrowAndSteal(address lender, uint256 value) public {
         // Use this to pack arbitrary data to `onFlashLoan`
         bytes memory data = abi.encode(Action.STEAL);
-        FlashLenderLike(lender).flashLoan(address(this), value, data);
+        FlashLenderLike(lender).flashLoan(address(this), address(currency), value, data);
     }
 
     function flashBorrowAndReenter(address lender, uint256 value) public {
         // Use this to pack arbitrary data to `onFlashLoan`
         bytes memory data = abi.encode(Action.REENTER);
-        FlashLenderLike(lender).flashLoan(address(this), value, data);
+        FlashLenderLike(lender).flashLoan(address(this), address(currency), value, data);
     }
 }
