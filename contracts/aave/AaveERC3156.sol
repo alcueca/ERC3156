@@ -19,6 +19,8 @@ contract AaveERC3156 {
 
     LendingPoolLike public lendingPool;
 
+    mapping(address => address) public underlyingToAsset;
+
     constructor(LendingPoolAddressesProviderLike provider) {
         lendingPool = LendingPoolLike(provider.getLendingPool());
     }
@@ -100,6 +102,6 @@ contract AaveERC3156 {
      */
     function flashSupply(address token) external view returns (uint256) {
         AaveDataTypes.ReserveData memory reserveData = lendingPool.getReserveData(token);
-        return IERC20(reserveData.aTokenAddress).balanceOf(address(lendingPool));
+        return IERC20(token).balanceOf(reserveData.aTokenAddress);
     }
 }

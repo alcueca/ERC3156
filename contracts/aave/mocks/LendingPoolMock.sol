@@ -6,6 +6,7 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/math/SafeMath.sol";
 import "../interfaces/LendingPoolAddressesProviderLike.sol";
 import "../libraries/AaveDataTypes.sol";
+import "@nomiclabs/buidler/console.sol";
 
 
 interface FlashLoanReceiverLike {
@@ -109,14 +110,15 @@ contract LendingPoolMock is LendingPoolStorage {
 
   /**
    * @dev Adds a reserve to the reserves list, as an ATokenMock and underlying ERC20Mock pair
-   * @param asset The address of the underlying asset of the reserve
+   * @param aToken The address of the reserve aToken
    **/
-  function addReserve(address asset)
+  function addReserve(address aToken)
     external
   {
+    address asset = ATokenLike(aToken).underlying();
     uint256 reservesCount = _reservesCount;
     _reserves[asset].id = uint8(reservesCount);
-    _reserves[asset].aTokenAddress = ATokenLike(asset).underlying();
+    _reserves[asset].aTokenAddress = aToken;
     _reservesList[reservesCount] = asset;
     _reservesCount = reservesCount + 1;
   }
