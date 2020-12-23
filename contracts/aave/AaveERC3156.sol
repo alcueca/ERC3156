@@ -4,66 +4,11 @@ pragma experimental ABIEncoderV2;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/math/SafeMath.sol";
+import "../interfaces/FlashBorrowerLike.sol";
+import "./interfaces/LendingPoolLike.sol";
+import "./interfaces/LendingPoolAddressesProviderLike.sol";
+import "./libraries/AaveDataTypes.sol";
 
-
-interface FlashBorrowerLike {
-    function onFlashLoan(address user, address token, uint256 value, uint256 fee, bytes calldata) external;
-}
-interface LendingPoolAddressesProviderLike {
-    function getLendingPool() external view returns (address);
-}
-
-interface LendingPoolLike {
-    function flashLoan(
-        address receiverAddress,
-        address[] calldata assets,
-        uint256[] calldata amounts,
-        uint256[] calldata modes,
-        address onBehalfOf,
-        bytes calldata params,
-        uint16 referralCode
-    ) external;
-
-    function getReserveData(address asset) external view returns (ReserveData memory);
-
-    struct ReserveData {
-        //stores the reserve configuration
-        ReserveConfigurationMap configuration;
-        //the liquidity index. Expressed in ray
-        uint128 liquidityIndex;
-        //variable borrow index. Expressed in ray
-        uint128 variableBorrowIndex;
-        //the current supply rate. Expressed in ray
-        uint128 currentLiquidityRate;
-        //the current variable borrow rate. Expressed in ray
-        uint128 currentVariableBorrowRate;
-        //the current stable borrow rate. Expressed in ray
-        uint128 currentStableBorrowRate;
-        uint40 lastUpdateTimestamp;
-        //tokens addresses
-        address aTokenAddress;
-        address stableDebtTokenAddress;
-        address variableDebtTokenAddress;
-        //address of the interest rate strategy
-        address interestRateStrategyAddress;
-        //the id of the reserve. Represents the position in the list of the active reserves
-        uint8 id;
-    }
-
-    struct ReserveConfigurationMap {
-        //bit 0-15: LTV
-        //bit 16-31: Liq. threshold
-        //bit 32-47: Liq. bonus
-        //bit 48-55: Decimals
-        //bit 56: Reserve is active
-        //bit 57: reserve is frozen
-        //bit 58: borrowing is enabled
-        //bit 59: stable rate borrowing enabled
-        //bit 60-63: reserved
-        //bit 64-79: reserve factor
-        uint256 data;
-    }
-}
 
 /**
  * @author Alberto Cuesta Cañada
@@ -154,7 +99,7 @@ contract AaveERC3156 {
      * @return The amount of `token` that can be borrowed.
      */
     function flashSupply(address token) external view returns (uint256) {
-        LendingPoolLike.ReserveData memory reserveData = lendingPool.getReserveData(token);
+        AaveDataTypes.ReserveData memory reserveData = lendingPool.getReserveData(token);
         return IERC20(reserveData.aTokenAddress).balanceOf(address(lendingPool));
     }
 }
