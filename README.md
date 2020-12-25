@@ -11,18 +11,18 @@ The contracts included inherit from OpenZeppelin's ERC20.
 ```
 contract MyContract is ERC20FlashMinter {
 
-    constructor (string memory _name, string memory _symbol, uint256 _fee) public ERC20FlashMinter(_name, _symbol, _fee) {...}
+    constructor (..., string memory _name, string memory _symbol, uint256 _fee) public ERC20FlashMinter(_name, _symbol, _fee) {...}
 
     ...
 }
 ```
 
-`FlashLender` uses an `ERC20` contract as currency and has flash lending capabilities.
+`FlashLender` holds tokens from two `ERC20` contract as assets and has flash lending capabilities.
 
 ```
-contract MyContract is ERC20FlashLoan {
+contract MyContract is FlashLender {
 
-    constructor (string memory _name, string memory _symbol, IERC20 _asset, uint256 _fee) public ERC20FlashLoan(_name, _symbol, _asset, _fee) {...}
+    constructor (..., IERC20 _asset1, IERC20 _asset2, uint256 _fee) public FlashLender(_asset1, _asset2, _fee) {...}
 
     ...
 }

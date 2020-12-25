@@ -65,7 +65,7 @@ contract('ERC20FlashMinter', (accounts) => {
   })
 
   it('should do a simple flash loan from an EOA', async () => {
-    await lender.flashLoan(borrower.address, 1, '0x0000000000000000000000000000000000000000000000000000000000000000', { from: user1 })
+    await lender.flashLoan(borrower.address, lender.address, 1, '0x0000000000000000000000000000000000000000000000000000000000000000', { from: user1 })
 
     const balanceAfter = await lender.balanceOf(user1)
     balanceAfter.toString().should.equal(new BN('0').toString())

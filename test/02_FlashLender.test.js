@@ -9,90 +9,103 @@ const MAX = '1157920892373161954235709850086879078532699846656405640394575840079
 
 contract('FlashLender', (accounts) => {
   const [deployer, user1] = accounts
-  let currency
+  let currency1, currency2
   let lender
-  let borrower
+  let borrower1
 
   beforeEach(async () => {
-    currency = await ERC20Currency.new("Test", "TST", { from: deployer })
-    lender = await FlashLender.new(currency.address, 1000, { from: deployer })
-    borrower = await FlashBorrower.new(currency.address, { from: deployer })
+    currency1 = await ERC20Currency.new("Test1", "TST1", { from: deployer })
+    currency2 = await ERC20Currency.new("Test2", "TST2", { from: deployer })
+    lender = await FlashLender.new(currency1.address, currency2.address, 1000, { from: deployer })
+    borrower1 = await FlashBorrower.new(currency1.address, { from: deployer })
+    borrower2 = await FlashBorrower.new(currency2.address, { from: deployer })
 
-    await currency.mint(lender.address, 1000, { from: deployer })
+    await currency1.mint(lender.address, 1000, { from: deployer })
+    await currency2.mint(lender.address, 999, { from: deployer })
   })
 
   it('should do a simple flash loan', async () => {
-    await borrower.flashBorrow(lender.address, 1, { from: user1 })
+    await borrower1.flashBorrow(lender.address, 1, { from: user1 })
 
-    const balanceAfter = await currency.balanceOf(user1)
+    let balanceAfter = await currency1.balanceOf(user1)
     balanceAfter.toString().should.equal(new BN('0').toString())
-    const flashBalance = await borrower.flashBalance()
+    let flashBalance = await borrower1.flashBalance()
     flashBalance.toString().should.equal(new BN('1').toString())
-    const flashValue = await borrower.flashValue()
+    let flashValue = await borrower1.flashValue()
     flashValue.toString().should.equal(new BN('1').toString())
-    const flashUser = await borrower.flashUser()
-    flashUser.toString().should.equal(borrower.address)
+    let flashUser = await borrower1.flashUser()
+    flashUser.toString().should.equal(borrower1.address)
+
+    await borrower2.flashBorrow(lender.address, 3, { from: user1 })
+
+    balanceAfter = await currency2.balanceOf(user1)
+    balanceAfter.toString().should.equal(new BN('0').toString())
+    flashBalance = await borrower2.flashBalance()
+    flashBalance.toString().should.equal(new BN('3').toString())
+    flashValue = await borrower2.flashValue()
+    flashValue.toString().should.equal(new BN('3').toString())
+    flashUser = await borrower2.flashUser()
+    flashUser.toString().should.equal(borrower2.address)
   })
 
   it('should do a loan that pays fees', async () => {
-    await currency.mint(borrower.address, 1, { from: user1 })
-    await borrower.flashBorrow(lender.address, 1000, { from: user1 })
+    await currency1.mint(borrower1.address, 1, { from: user1 })
+    await borrower1.flashBorrow(lender.address, 1000, { from: user1 })
 
-    const balanceAfter = await currency.balanceOf(user1)
+    const balanceAfter = await currency1.balanceOf(user1)
     balanceAfter.toString().should.equal(new BN('0').toString())
-    const flashBalance = await borrower.flashBalance()
+    const flashBalance = await borrower1.flashBalance()
     flashBalance.toString().should.equal(new BN('1001').toString())
-    const flashValue = await borrower.flashValue()
+    const flashValue = await borrower1.flashValue()
     flashValue.toString().should.equal(new BN('1000').toString())
-    const flashFee = await borrower.flashFee()
+    const flashFee = await borrower1.flashFee()
     flashFee.toString().should.equal(new BN('1').toString())
-    const flashUser = await borrower.flashUser()
-    flashUser.toString().should.equal(borrower.address)
+    const flashUser = await borrower1.flashUser()
+    flashUser.toString().should.equal(borrower1.address)
   })
 
-
   it('lenders can choose to charge no fees', async () => {
-    lender = await FlashLender.new(currency.address, MAX, { from: deployer })
-    await currency.mint(lender.address, 1000, { from: deployer })
+    lender = await FlashLender.new(currency1.address, currency2.address, MAX, { from: deployer })
+    await currency1.mint(lender.address, 1000, { from: deployer })
 
-    await borrower.flashBorrow(lender.address, 1000, { from: user1 })
+    await borrower1.flashBorrow(lender.address, 1000, { from: user1 })
 
-    const balanceAfter = await currency.balanceOf(user1)
+    const balanceAfter = await currency1.balanceOf(user1)
     balanceAfter.toString().should.equal(new BN('0').toString())
-    const flashBalance = await borrower.flashBalance()
+    const flashBalance = await borrower1.flashBalance()
     flashBalance.toString().should.equal(new BN('1000').toString())
-    const flashValue = await borrower.flashValue()
+    const flashValue = await borrower1.flashValue()
     flashValue.toString().should.equal(new BN('1000').toString())
-    const flashFee = await borrower.flashFee()
+    const flashFee = await borrower1.flashFee()
     flashFee.toString().should.equal(new BN('0').toString())
-    const flashUser = await borrower.flashUser()
-    flashUser.toString().should.equal(borrower.address)
+    const flashUser = await borrower1.flashUser()
+    flashUser.toString().should.equal(borrower1.address)
   })
 
   it('should do a simple flash loan from an EOA', async () => {
-    await lender.flashLoan(borrower.address, 1, '0x0000000000000000000000000000000000000000000000000000000000000000', { from: user1 })
+    await lender.flashLoan(borrower1.address, currency1.address, 1, '0x0000000000000000000000000000000000000000000000000000000000000000', { from: user1 })
 
-    const balanceAfter = await currency.balanceOf(user1)
+    const balanceAfter = await currency1.balanceOf(user1)
     balanceAfter.toString().should.equal(new BN('0').toString())
-    const flashBalance = await borrower.flashBalance()
+    const flashBalance = await borrower1.flashBalance()
     flashBalance.toString().should.equal(new BN('1').toString())
-    const flashValue = await borrower.flashValue()
+    const flashValue = await borrower1.flashValue()
     flashValue.toString().should.equal(new BN('1').toString())
-    const flashUser = await borrower.flashUser()
+    const flashUser = await borrower1.flashUser()
     flashUser.toString().should.equal(user1)
   })
 
   it('needs to return funds after a flash loan', async () => {
     await expectRevert(
-      borrower.flashBorrowAndSteal(lender.address, 1, { from: deployer }),
+      borrower1.flashBorrowAndSteal(lender.address, 1, { from: deployer }),
       'FlashLender: unpaid loan'
     )
   })
 
   it('should do two nested flash loans', async () => {
-    await borrower.flashBorrowAndReenter(lender.address, 1, { from: deployer })
+    await borrower1.flashBorrowAndReenter(lender.address, 1, { from: deployer })
 
-    const flashBalance = await borrower.flashBalance()
+    const flashBalance = await borrower1.flashBalance()
     flashBalance.toString().should.equal('3')
   })
 })
