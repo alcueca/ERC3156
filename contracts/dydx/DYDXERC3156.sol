@@ -71,7 +71,7 @@ contract DYDXERC3156 is Ownable, IERC3156FlashLender, DYDXFlashBorrowerLike {
     }
 
     function flashSupply(address token) external view override returns (uint256) {
-        if (isRegistered(token) && !isClosing(token)) {
+        if (isRegistered(token)) {
             return IERC20(token).balanceOf(_soloMarginAddress);
         }
 
@@ -190,10 +190,5 @@ contract DYDXERC3156 is Ownable, IERC3156FlashLender, DYDXFlashBorrowerLike {
 
     function marketIdFromTokenAddress(address token) internal view returns (uint256) {
         return _tokenAddressToMarketId[token];
-    }
-
-    function isClosing(address token) internal view returns (bool) {
-        uint256 marketId = _tokenAddressToMarketId[token];
-        return SoloMarginLike(_soloMarginAddress).getMarketIsClosing(marketId);
     }
 }

@@ -23,6 +23,5 @@ import "../libraries/DYDXDataTypes.sol";
 
 interface SoloMarginLike {
     function operate(DYDXDataTypes.AccountInfo[] memory accounts, DYDXDataTypes.ActionArgs[] memory actions) external;
-    function getMarketIsClosing(uint256 marketId) external view returns (bool);
     function getMarketTokenAddress(uint256 marketId) external view returns (address);
 }
