@@ -19,10 +19,10 @@
 pragma solidity ^0.7.5;
 pragma experimental ABIEncoderV2;
 
-import "./Types.sol";
+import "../libraries/DYDXDataTypes.sol";
 
-interface ISoloMargin {
-    function operate(Types.AccountInfo[] memory accounts, Types.ActionArgs[] memory actions) external;
+interface SoloMarginLike {
+    function operate(DYDXDataTypes.AccountInfo[] memory accounts, DYDXDataTypes.ActionArgs[] memory actions) external;
     function getMarketIsClosing(uint256 marketId) external view returns (bool);
     function getMarketTokenAddress(uint256 marketId) external view returns (address);
 }

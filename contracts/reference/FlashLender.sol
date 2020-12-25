@@ -3,17 +3,14 @@ pragma solidity ^0.7.5;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/math/SafeMath.sol";
+import { IERC3156FlashBorrower, IERC3156FlashLender } from "../interfaces/IERC3156.sol";
 
-
-interface flashBorrowerLike {
-    function onFlashLoan(address user, address token, uint256 value, uint256 fee, bytes calldata) external;
-}
 
 /**
  * @author Alberto Cuesta Cañada
  * @dev Extension of {ERC20} that allows flash lending.
  */
-contract FlashLender {
+contract FlashLender is IERC3156FlashLender {
     using SafeMath for uint256;
 
     address public immutable currency1;
@@ -33,7 +30,7 @@ contract FlashLender {
      * @param value The amount of tokens lent.
      * @param data A data parameter to be passed on to the `receiver` for any custom use.
      */
-    function flashLoan(address receiver, address token, uint256 value, bytes calldata data) external {
+    function flashLoan(address receiver, address token, uint256 value, bytes calldata data) external override {
         require(
             token == currency1 || token == currency2,
             "FlashLender: unsupported loan currency"
@@ -42,7 +39,7 @@ contract FlashLender {
         uint256 _fee = _flashFee(token, value);
         uint256 balanceTarget = currency.balanceOf(address(this)).add(_fee);
         currency.transfer(receiver, value);
-        flashBorrowerLike(receiver).onFlashLoan(msg.sender, token, value, _fee, data);
+        IERC3156FlashBorrower(receiver).onFlashLoan(msg.sender, token, value, _fee, data);
         require(currency.balanceOf(address(this)) >= balanceTarget, "FlashLender: unpaid loan");
     }
 
@@ -52,7 +49,7 @@ contract FlashLender {
      * @param value The amount of tokens lent.
      * @return The amount of `token` to be charged for the loan, on top of the returned principal.
      */
-    function flashFee(address token, uint256 value) external view returns (uint256) {
+    function flashFee(address token, uint256 value) external view override returns (uint256) {
         require(
             token == currency1 || token == currency2,
             "FlashLender: unsupported loan currency"
@@ -75,7 +72,7 @@ contract FlashLender {
      * @param token The loan currency.
      * @return The amount of `token` that can be borrowed.
      */
-    function flashSupply(address token) external view returns (uint256) {
+    function flashSupply(address token) external view override returns (uint256) {
         return IERC20(token).balanceOf(address(this));
     }
 }

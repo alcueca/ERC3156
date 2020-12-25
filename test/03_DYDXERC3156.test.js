@@ -2,8 +2,8 @@ const { BN, expectEvent, expectRevert, balance } = require('@openzeppelin/test-h
 const { expect } = require('chai');
 const { ethers } = require('ethers');
 
-const MockSoloMargin = artifacts.require('MockSoloMargin');
-const SoloLiquidityProxy = artifacts.require('SoloLiquidityProxy');
+const SoloMarginMock = artifacts.require('SoloMarginMock');
+const DYDXERC3156 = artifacts.require('DYDXERC3156');
 const ERC20Mock = artifacts.require('ERC20Mock');
 const FlashBorrower = artifacts.require('FlashBorrower');
 
@@ -12,7 +12,7 @@ const FlashBorrower = artifacts.require('FlashBorrower');
   return ethers.utils.defaultAbiCoder.encode(["uint256", "bytes"], [testType, encodedData]);
 } */
 
-contract('SoloLiquidityProxy', (accounts) => {
+contract('DYDXERC3156', (accounts) => {
 
   const [ deployer, user1 ] = accounts;
   const soloBalance = new BN(100000);
@@ -20,9 +20,9 @@ contract('SoloLiquidityProxy', (accounts) => {
   beforeEach(async function () {
     this.erc20 = await ERC20Mock.new("Test", "TT", { from: deployer });
     this.borrower = await FlashBorrower.new(this.erc20.address, {from: deployer })
-    this.solo = await MockSoloMargin.new([1], [this.erc20.address], { from: deployer });
+    this.solo = await SoloMarginMock.new([1], [this.erc20.address], { from: deployer });
 
-    this.proxy = await SoloLiquidityProxy.new(this.solo.address, { from: deployer });
+    this.proxy = await DYDXERC3156.new(this.solo.address, { from: deployer });
     await this.proxy.registerPool(1, { from: deployer });
 
     await this.erc20.mint(this.solo.address, soloBalance.toString(), { from: deployer });

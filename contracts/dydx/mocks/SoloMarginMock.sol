@@ -21,10 +21,10 @@ pragma experimental ABIEncoderV2;
 
 import "@openzeppelin/contracts/math/SafeMath.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import "../dydx/ISoloMargin.sol";
-import "../dydx/ICallee.sol";
+import "../interfaces/SoloMarginLike.sol";
+import "../interfaces/DYDXFlashBorrowerLike.sol";
 
-contract MockSoloMargin is ISoloMargin {
+contract SoloMarginMock is SoloMarginLike {
     using SafeMath for uint256;
 
     mapping(uint256 => address) internal _markets;
@@ -42,51 +42,51 @@ contract MockSoloMargin is ISoloMargin {
         _isClosed = false;
     }
 
-    function operate(Types.AccountInfo[] memory accounts, Types.ActionArgs[] memory actions) public override {
+    function operate(DYDXDataTypes.AccountInfo[] memory accounts, DYDXDataTypes.ActionArgs[] memory actions) public override {
         /* data */
-        require(accounts.length == 1, "MockSoloMargin: incorrect accounts length");
-        require(actions.length == 3, "MockSoloMargin: incorrect actions length");
+        require(accounts.length == 1, "SoloMarginMock: incorrect accounts length");
+        require(actions.length == 3, "SoloMarginMock: incorrect actions length");
         _scheduleAccountAddress = accounts[0].owner;
         _scheduleAccountNumber = accounts[0].number;
 
         /* withdraw */
-        Types.ActionArgs memory withdraw = actions[0];
+        DYDXDataTypes.ActionArgs memory withdraw = actions[0];
         _scheduledTokenAmount = withdraw.amount.value;
         _scheduleMarketId = withdraw.primaryMarketId;
 
-        require(withdraw.amount.sign == false, "MockSoloMargin: incorrect withdraw sign");
-        require(withdraw.amount.denomination == Types.AssetDenomination.Wei, "MockSoloMargin: incorrect withdraw denomination");
-        require(withdraw.amount.ref == Types.AssetReference.Delta, "MockSoloMargin: incorrect withdraw reference");
+        require(withdraw.amount.sign == false, "SoloMarginMock: incorrect withdraw sign");
+        require(withdraw.amount.denomination == DYDXDataTypes.AssetDenomination.Wei, "SoloMarginMock: incorrect withdraw denomination");
+        require(withdraw.amount.ref == DYDXDataTypes.AssetReference.Delta, "SoloMarginMock: incorrect withdraw reference");
 
-        require(withdraw.actionType == Types.ActionType.Withdraw, "MockSoloMargin: incorrect withdraw action type");
-        require(withdraw.accountId == 0, "MockSoloMargin: must use first account");
-        require(withdraw.otherAddress == msg.sender, "MockSoloMargin: not sending to proxy");
+        require(withdraw.actionType == DYDXDataTypes.ActionType.Withdraw, "SoloMarginMock: incorrect withdraw action type");
+        require(withdraw.accountId == 0, "SoloMarginMock: must use first account");
+        require(withdraw.otherAddress == msg.sender, "SoloMarginMock: not sending to proxy");
 
         /* call */
-        Types.ActionArgs memory call = actions[1];
-        require(call.actionType == Types.ActionType.Call, "MockSoloMargin: incorrect call action type");
-        require(call.accountId == 0, "MockSoloMargin: must use first account");
-        require(call.otherAddress == msg.sender, "MockSoloMargin: not invoking proxy");
+        DYDXDataTypes.ActionArgs memory call = actions[1];
+        require(call.actionType == DYDXDataTypes.ActionType.Call, "SoloMarginMock: incorrect call action type");
+        require(call.accountId == 0, "SoloMarginMock: must use first account");
+        require(call.otherAddress == msg.sender, "SoloMarginMock: not invoking proxy");
 
         /* deposit */
-        Types.ActionArgs memory deposit = actions[2];
-        require(_scheduleMarketId == deposit.primaryMarketId, "MockSoloMargin: marketId mismatch");
+        DYDXDataTypes.ActionArgs memory deposit = actions[2];
+        require(_scheduleMarketId == deposit.primaryMarketId, "SoloMarginMock: marketId mismatch");
 
         uint256 depositValue = withdraw.amount.value.add(repaymentFee(withdraw.primaryMarketId));
-        require(deposit.amount.value == depositValue, "MockSoloMargin: incorrect deposit value");
-        require(deposit.amount.sign == true, "MockSoloMargin: incorrect deposit sign");
-        require(deposit.amount.denomination == Types.AssetDenomination.Wei, "MockSoloMargin: incorrect deposit denomination");
-        require(deposit.amount.ref == Types.AssetReference.Delta, "MockSoloMargin: incorrect deposit reference");
+        require(deposit.amount.value == depositValue, "SoloMarginMock: incorrect deposit value");
+        require(deposit.amount.sign == true, "SoloMarginMock: incorrect deposit sign");
+        require(deposit.amount.denomination == DYDXDataTypes.AssetDenomination.Wei, "SoloMarginMock: incorrect deposit denomination");
+        require(deposit.amount.ref == DYDXDataTypes.AssetReference.Delta, "SoloMarginMock: incorrect deposit reference");
 
-        require(deposit.actionType == Types.ActionType.Deposit, "MockSoloMargin: incorrect deposit action type");
-        require(deposit.accountId == 0, "MockSoloMargin: must use first account");
-        require(deposit.otherAddress == msg.sender, "MockSoloMargin: not sending to proxy");
+        require(deposit.actionType == DYDXDataTypes.ActionType.Deposit, "SoloMarginMock: incorrect deposit action type");
+        require(deposit.accountId == 0, "SoloMarginMock: must use first account");
+        require(deposit.otherAddress == msg.sender, "SoloMarginMock: not sending to proxy");
 
         uint256 balanceBefore = balanceOf(withdraw.primaryMarketId);
 
         transfer(withdraw.primaryMarketId, msg.sender, withdraw.amount.value);
 
-        ICallee(msg.sender).callFunction(msg.sender, Types.AccountInfo({
+        DYDXFlashBorrowerLike(msg.sender).callFunction(msg.sender, DYDXDataTypes.AccountInfo({
             owner: _scheduleAccountAddress,
             number: _scheduleAccountNumber
         }), call.data);
@@ -94,7 +94,7 @@ contract MockSoloMargin is ISoloMargin {
         transferFrom(deposit.primaryMarketId, msg.sender, address(this), deposit.amount.value);
         uint256 balanceAfter = balanceOf(withdraw.primaryMarketId);
 
-        require(balanceAfter == balanceBefore.add(repaymentFee(withdraw.primaryMarketId)), "MockSoloMargin: Incorrect ending balance");
+        require(balanceAfter == balanceBefore.add(repaymentFee(withdraw.primaryMarketId)), "SoloMarginMock: Incorrect ending balance");
 
         _scheduledTokenAmount = 0;
         _scheduleMarketId = 0;

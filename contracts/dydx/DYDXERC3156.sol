@@ -22,23 +22,21 @@ pragma experimental ABIEncoderV2;
 import "@openzeppelin/contracts/math/SafeMath.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import "./ISoloMargin.sol";
-import "./Types.sol";
-import "./ICallee.sol";
+import { IERC3156FlashBorrower, IERC3156FlashLender } from "../interfaces/IERC3156.sol";
+import "./interfaces/SoloMarginLike.sol";
+import "./interfaces/DYDXFlashBorrowerLike.sol";
+import "./libraries/DYDXDataTypes.sol";
 
-interface flashBorrowerLike {
-    function onFlashLoan(address user, address token, uint256 value, uint256 fee, bytes calldata data) external;
-}
 
-contract SoloLiquidityProxy is Ownable, ICallee {
+contract DYDXERC3156 is Ownable, IERC3156FlashLender, DYDXFlashBorrowerLike {
     using SafeMath for uint256;
 
     uint256 internal NULL_ACCOUNT_ID = 0;
     uint256 internal NULL_MARKET_ID = 0;
-    Types.AssetAmount internal NULL_AMOUNT = Types.AssetAmount({
+    DYDXDataTypes.AssetAmount internal NULL_AMOUNT = DYDXDataTypes.AssetAmount({
         sign: false,
-        denomination: Types.AssetDenomination.Wei,
-        ref: Types.AssetReference.Delta,
+        denomination: DYDXDataTypes.AssetDenomination.Wei,
+        ref: DYDXDataTypes.AssetReference.Delta,
         value: 0
     });
     bytes internal NULL_DATA = "";
@@ -54,7 +52,7 @@ contract SoloLiquidityProxy is Ownable, ICallee {
     }
 
     function registerPool(uint256 marketId) external onlyOwner {
-        address token = ISoloMargin(_soloMarginAddress).getMarketTokenAddress(marketId);
+        address token = SoloMarginLike(_soloMarginAddress).getMarketTokenAddress(marketId);
         require(token != address(0), "SoloLiquidityProxy: cannot register empty market");
 
         _tokenAddressToMarketId[token] = marketId;
@@ -72,7 +70,7 @@ contract SoloLiquidityProxy is Ownable, ICallee {
         IERC20(token).approve(_soloMarginAddress, 0);
     }
 
-    function flashSupply(address token) external view returns (uint256) {
+    function flashSupply(address token) external view override returns (uint256) {
         if (isRegistered(token) && !isClosing(token)) {
             return IERC20(token).balanceOf(_soloMarginAddress);
         }
@@ -80,18 +78,18 @@ contract SoloLiquidityProxy is Ownable, ICallee {
         return 0;
     }
 
-    function flashFee(address token, uint256 amount) public view returns (uint256) {
+    function flashFee(address token, uint256 amount) public view override returns (uint256) {
         // Add 1 wei for markets 0-1 and 2 wei for markets 2-3
         return marketIdFromTokenAddress(token) < 2 ? 1 : 2;
     }
 
-    function flashLoan(address receiver, address token, uint256 amount, bytes memory data) external {
-        ISoloMargin solo = ISoloMargin(_soloMarginAddress);
-        Types.ActionArgs[] memory operations = new Types.ActionArgs[](3);
+    function flashLoan(address receiver, address token, uint256 amount, bytes memory data) external override {
+        SoloMarginLike solo = SoloMarginLike(_soloMarginAddress);
+        DYDXDataTypes.ActionArgs[] memory operations = new DYDXDataTypes.ActionArgs[](3);
         operations[0] = getWithdrawAction(token, amount);
         operations[1] = getCallAction(abi.encode(data, msg.sender, receiver, token, amount));
         operations[2] = getDepositAction(token, amount.add(flashFee(token, amount)));
-        Types.AccountInfo[] memory accountInfos = new Types.AccountInfo[](1);
+        DYDXDataTypes.AccountInfo[] memory accountInfos = new DYDXDataTypes.AccountInfo[](1);
         accountInfos[0] = getAccountInfo();
 
         solo.operate(accountInfos, operations);
@@ -99,7 +97,7 @@ contract SoloLiquidityProxy is Ownable, ICallee {
 
     function callFunction(
         address innerSender,
-        Types.AccountInfo memory accountInfo,
+        DYDXDataTypes.AccountInfo memory accountInfo,
         bytes memory wrappedData
     )
     public override
@@ -115,11 +113,11 @@ contract SoloLiquidityProxy is Ownable, ICallee {
             IERC20(token).transfer(receiver, amount),
             "SoloLiquidityProxy: transfer to invoker failed");
 
-        flashBorrowerLike(receiver).onFlashLoan(sender, token, amount, flashFee(token, amount), data);
+        IERC3156FlashBorrower(receiver).onFlashLoan(sender, token, amount, flashFee(token, amount), data);
     }
 
-    function getAccountInfo() internal view returns (Types.AccountInfo memory) {
-        return Types.AccountInfo({
+    function getAccountInfo() internal view returns (DYDXDataTypes.AccountInfo memory) {
+        return DYDXDataTypes.AccountInfo({
             owner: address(this),
             number: 1
         });
@@ -128,15 +126,15 @@ contract SoloLiquidityProxy is Ownable, ICallee {
     function getWithdrawAction(address token, uint256 amount)
     internal
     view
-    returns (Types.ActionArgs memory)
+    returns (DYDXDataTypes.ActionArgs memory)
     {
-        return Types.ActionArgs({
-            actionType: Types.ActionType.Withdraw,
+        return DYDXDataTypes.ActionArgs({
+            actionType: DYDXDataTypes.ActionType.Withdraw,
             accountId: 0,
-            amount: Types.AssetAmount({
+            amount: DYDXDataTypes.AssetAmount({
                 sign: false,
-                denomination: Types.AssetDenomination.Wei,
-                ref: Types.AssetReference.Delta,
+                denomination: DYDXDataTypes.AssetDenomination.Wei,
+                ref: DYDXDataTypes.AssetReference.Delta,
                 value: amount
             }),
             primaryMarketId: marketIdFromTokenAddress(token),
@@ -150,15 +148,15 @@ contract SoloLiquidityProxy is Ownable, ICallee {
     function getDepositAction(address token, uint256 repaymentAmount)
     internal
     view
-    returns (Types.ActionArgs memory)
+    returns (DYDXDataTypes.ActionArgs memory)
     {
-        return Types.ActionArgs({
-            actionType: Types.ActionType.Deposit,
+        return DYDXDataTypes.ActionArgs({
+            actionType: DYDXDataTypes.ActionType.Deposit,
             accountId: 0,
-            amount: Types.AssetAmount({
+            amount: DYDXDataTypes.AssetAmount({
                 sign: true,
-                denomination: Types.AssetDenomination.Wei,
-                ref: Types.AssetReference.Delta,
+                denomination: DYDXDataTypes.AssetDenomination.Wei,
+                ref: DYDXDataTypes.AssetReference.Delta,
                 value: repaymentAmount
             }),
             primaryMarketId: marketIdFromTokenAddress(token),
@@ -172,10 +170,10 @@ contract SoloLiquidityProxy is Ownable, ICallee {
     function getCallAction(bytes memory data_)
     internal
     view
-    returns (Types.ActionArgs memory)
+    returns (DYDXDataTypes.ActionArgs memory)
     {
-        return Types.ActionArgs({
-            actionType: Types.ActionType.Call,
+        return DYDXDataTypes.ActionArgs({
+            actionType: DYDXDataTypes.ActionType.Call,
             accountId: 0,
             amount: NULL_AMOUNT,
             primaryMarketId: NULL_MARKET_ID,
@@ -196,6 +194,6 @@ contract SoloLiquidityProxy is Ownable, ICallee {
 
     function isClosing(address token) internal view returns (bool) {
         uint256 marketId = _tokenAddressToMarketId[token];
-        return ISoloMargin(_soloMarginAddress).getMarketIsClosing(marketId);
+        return SoloMarginLike(_soloMarginAddress).getMarketIsClosing(marketId);
     }
 }

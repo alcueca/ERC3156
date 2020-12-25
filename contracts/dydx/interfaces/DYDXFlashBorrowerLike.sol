@@ -18,15 +18,15 @@
 pragma solidity ^0.7.5;
 pragma experimental ABIEncoderV2;
 
-import "./Types.sol";
+import "../libraries/DYDXDataTypes.sol";
 
 /**
- * @title ICallee
+ * @title DYDXFlashBorrowerLike
  * @author dYdX
  *
  * Interface that Callees for Solo must implement in order to ingest data.
  */
-interface ICallee {
+interface DYDXFlashBorrowerLike {
 
     // ============ Public Functions ============
 
@@ -39,7 +39,7 @@ interface ICallee {
      */
     function callFunction(
         address sender,
-        Types.AccountInfo memory accountInfo,
+        DYDXDataTypes.AccountInfo memory accountInfo,
         bytes memory data
     )
     external;

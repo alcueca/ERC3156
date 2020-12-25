@@ -19,7 +19,7 @@
 
 pragma solidity ^0.7.5;
 
-library Types {
+library DYDXDataTypes {
     enum ActionType {
         Deposit,   // supply tokens
         Withdraw,  // flashLoan tokens
