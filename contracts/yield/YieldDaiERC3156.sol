@@ -17,31 +17,31 @@ contract YieldDaiERC3156 is IERC3156FlashLender, YieldFlashBorrowerLike {
     using SafeCast for uint256;
     using SafeMath for uint256;
 
-    IPool public lender;
+    IPool public pool;
 
-    function setLender(IPool lender_) public {
-        lender = lender_;
+    function setPool(IPool pool_) public {
+        pool = pool_;
 
-        // Allow lender to take dai and fyDai for trading
-        if (lender.dai().allowance(address(this), address(lender)) < type(uint256).max)
-            lender.dai().approve(address(lender), type(uint256).max);
-        if (lender.fyDai().allowance(address(this), address(lender)) < type(uint112).max)
-            lender.fyDai().approve(address(lender), type(uint256).max);
+        // Allow pool to take dai and fyDai for trading
+        if (pool.dai().allowance(address(this), address(pool)) < type(uint256).max)
+            pool.dai().approve(address(pool), type(uint256).max);
+        if (pool.fyDai().allowance(address(this), address(pool)) < type(uint112).max)
+            pool.fyDai().approve(address(pool), type(uint256).max);
     }
 
     /// @dev Fee charged on top of a Dai flash loan.
     function flashFee(address dai, uint256 daiBorrowed) public view override returns (uint256) {
-        require(dai == address(lender.dai()), "Unsupported Dai contract");
-        uint128 fyDaiAmount = lender.buyDaiPreview(daiBorrowed.toUint128());
+        require(dai == address(pool.dai()), "Unsupported Dai contract");
+        uint128 fyDaiAmount = pool.buyDaiPreview(daiBorrowed.toUint128());
 
         // To obtain the result of a trade on hypothetical reserves we need to call the YieldMath library
         uint256 daiRepaid = YieldMath.daiInForFYDaiOut(
-            (uint256(lender.getDaiReserves()).sub(daiBorrowed)).toUint128(),    // Dai reserves minus Dai we just bought
-            (uint256(lender.getFYDaiReserves()).add(fyDaiAmount)).toUint128(),  // fyDai reserves plus fyDai we just sold
+            (uint256(pool.getDaiReserves()).sub(daiBorrowed)).toUint128(),    // Dai reserves minus Dai we just bought
+            (uint256(pool.getFYDaiReserves()).add(fyDaiAmount)).toUint128(),  // fyDai reserves plus fyDai we just sold
             fyDaiAmount,                                                        // fyDai flash mint we have to repay
-            (lender.fyDai().maturity() - block.timestamp).toUint128(),                      // This can't be called after maturity
+            (pool.fyDai().maturity() - block.timestamp).toUint128(),                      // This can't be called after maturity
             int128(uint256((1 << 64)) / 126144000),                             // 1 / Seconds in 4 years, in 64.64
-            int128(uint256((950 << 64)) / 1000)                                 // Fees applied when selling Dai to the lender, in 64.64
+            int128(uint256((950 << 64)) / 1000)                                 // Fees applied when selling Dai to the pool, in 64.64
         );
 
         return daiRepaid.sub(daiBorrowed);
@@ -49,30 +49,30 @@ contract YieldDaiERC3156 is IERC3156FlashLender, YieldFlashBorrowerLike {
 
     /// @dev Maximum Dai flash loan available.
     function flashSupply(address dai) public view override returns (uint256) {
-        require(dai == address(lender.dai()), "Unsupported Dai contract");
-        return lender.getDaiReserves();
+        require(dai == address(pool.dai()), "Unsupported Dai contract");
+        return pool.getDaiReserves();
     }
 
     /// @dev Borrow `daiAmount` as a flash loan.
     function flashLoan(address receiver, address dai, uint256 daiAmount, bytes memory data) public override {
-        require(dai == address(lender.dai()), "Unsupported Dai contract");
+        require(dai == address(pool.dai()), "Unsupported Dai contract");
         bytes memory wrappedData = abi.encode(data, msg.sender, receiver, daiAmount);
-        uint256 fyDaiAmount = lender.buyDaiPreview(daiAmount.toUint128());
-        lender.fyDai().flashMint(fyDaiAmount, wrappedData); // Callback from fyDai will come back to this contract
+        uint256 fyDaiAmount = pool.buyDaiPreview(daiAmount.toUint128());
+        pool.fyDai().flashMint(fyDaiAmount, wrappedData); // Callback from fyDai will come back to this contract
     }
 
     /// @dev FYDai `flashMint` callback.
     function executeOnFlashMint(uint256 fyDaiAmount, bytes memory wrappedData) public override {
-        require(msg.sender == address(lender.fyDai()), "Callbacks only allowed from fyDai contract");
+        require(msg.sender == address(pool.fyDai()), "Callbacks only allowed from fyDai contract");
 
         (bytes memory data, address sender, address receiver, uint256 daiAmount) = abi.decode(wrappedData, (bytes, address, address, uint256));
 
-        uint256 paidFYDai = lender.buyDai(address(this), address(this), daiAmount.toUint128());
+        uint256 paidFYDai = pool.buyDai(address(this), address(receiver), daiAmount.toUint128());
 
-        uint256 fee = uint256(lender.buyFYDaiPreview(fyDaiAmount.toUint128())).sub(daiAmount);
-        IERC3156FlashBorrower(receiver).onFlashLoan(sender, address(lender.dai()), daiAmount, fee, data);
+        uint256 fee = uint256(pool.buyFYDaiPreview(fyDaiAmount.toUint128())).sub(daiAmount);
+        IERC3156FlashBorrower(receiver).onFlashLoan(sender, address(pool.dai()), daiAmount, fee, data);
         // Before the end of the transaction, `receiver` must `transfer` the `loanAmount` plus the `fee`
         // to this contract so that the conversions that repay the loan are done.
-        lender.sellDai(address(this), address(this), daiAmount.add(fee).toUint128());
+        pool.sellDai(address(this), address(this), daiAmount.add(fee).toUint128());
     }
 }

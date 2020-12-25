@@ -30,6 +30,7 @@ contract YieldFYDaiERC3156 is IERC3156FlashLender, YieldFlashBorrowerLike {
     /// @dev FYDai `flashMint` callback, which bridges to the ERC-3156 `onFlashLoan` callback.
     function executeOnFlashMint(uint256 fyDaiAmount, bytes memory wrappedData) public override {
         (bytes memory data, address sender, address receiver) = abi.decode(wrappedData, (bytes, address, address));
+        IFYDai(msg.sender).transfer(receiver, fyDaiAmount);
         IERC3156FlashBorrower(receiver).onFlashLoan(sender, msg.sender, fyDaiAmount, 0, data); // msg.sender is the lending fyDai contract
     }
 }

@@ -10,7 +10,7 @@ require('chai').use(require('chai-as-promised')).should()
 
 const MAX = '115792089237316195423570985008687907853269984665640564039457584007913129639935'
 
-contract('FlashLender', (accounts) => {
+contract('AaveERC3156', (accounts) => {
   const [deployer, user1] = accounts
   let currency1, currency2, aToken1, aToken2, lendingPool, lendingPoolAddressProvider, lender
   let borrower
