@@ -53,10 +53,10 @@ contract DYDXERC3156 is IERC3156FlashLender, DYDXFlashBorrowerLike {
         return marketIdFromTokenAddress(token) < 2 ? 1 : 2;
     }
 
-    function flashLoan(address receiver, address token, uint256 amount, bytes memory data) external override {
+    function flashLoan(address receiver, address token, uint256 amount, bytes memory userData) external override {
         DYDXDataTypes.ActionArgs[] memory operations = new DYDXDataTypes.ActionArgs[](3);
         operations[0] = getWithdrawAction(token, amount);
-        operations[1] = getCallAction(abi.encode(data, msg.sender, receiver, token, amount));
+        operations[1] = getCallAction(abi.encode(msg.sender, receiver, token, amount, userData));
         operations[2] = getDepositAction(token, amount.add(flashFee(token, amount)));
         DYDXDataTypes.AccountInfo[] memory accountInfos = new DYDXDataTypes.AccountInfo[](1);
         accountInfos[0] = getAccountInfo();
@@ -65,22 +65,22 @@ contract DYDXERC3156 is IERC3156FlashLender, DYDXFlashBorrowerLike {
     }
 
     function callFunction(
-        address innerSender,
+        address sender,
         DYDXDataTypes.AccountInfo memory accountInfo,
-        bytes memory wrappedData
+        bytes memory data
     )
     public override
     {
         require(msg.sender == address(soloMargin), "Callback only from SoloMargin");
-        require(innerSender == address(this), "FlashLoan only from this contract");
+        require(sender == address(this), "FlashLoan only from this contract");
 
-        (bytes memory data, address sender, address receiver, address token, uint256 amount) = 
-            abi.decode(wrappedData, (bytes, address, address, address, uint256));
+        (address origin, address receiver, address token, uint256 amount, bytes memory userData) = 
+            abi.decode(data, (address, address, address, uint256, bytes));
 
         // Transfer to `receiver`
         require(IERC20(token).transfer(receiver, amount), "Transfer failed");
 
-        IERC3156FlashBorrower(receiver).onFlashLoan(sender, token, amount, flashFee(token, amount), data);
+        IERC3156FlashBorrower(receiver).onFlashLoan(origin, token, amount, flashFee(token, amount), userData);
     }
 
     function getAccountInfo() internal view returns (DYDXDataTypes.AccountInfo memory) {

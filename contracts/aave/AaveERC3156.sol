@@ -31,9 +31,9 @@ contract AaveERC3156 is IERC3156FlashLender, AaveFlashBorrowerLike {
      * @param receiver The contract receiving the tokens, needs to implement the `onFlashLoan(address user, uint256 value, uint256 fee, bytes calldata)` interface.
      * @param token The loan currency.
      * @param value The amount of tokens lent.
-     * @param data A data parameter to be passed on to the `receiver` for any custom use.
+     * @param userData A data parameter to be passed on to the `receiver` for any custom use.
      */
-    function flashLoan(address receiver, address token, uint256 value, bytes calldata data) external override {
+    function flashLoan(address receiver, address token, uint256 value, bytes calldata userData) external override {
         address receiverAddress = address(this);
 
         address[] memory tokens = new address[](1);
@@ -47,7 +47,7 @@ contract AaveERC3156 is IERC3156FlashLender, AaveFlashBorrowerLike {
         modes[0] = 0;
 
         address onBehalfOf = address(this);
-        bytes memory wrappedData = abi.encode(data, msg.sender, receiver);
+        bytes memory data = abi.encode(msg.sender, receiver, userData);
         uint16 referralCode = 0;
 
         lendingPool.flashLoan(
@@ -56,7 +56,7 @@ contract AaveERC3156 is IERC3156FlashLender, AaveFlashBorrowerLike {
             values,
             modes,
             onBehalfOf,
-            wrappedData,
+            data,
             referralCode
         );
     }
@@ -66,19 +66,19 @@ contract AaveERC3156 is IERC3156FlashLender, AaveFlashBorrowerLike {
         address[] calldata tokens,
         uint256[] calldata values,
         uint256[] calldata fees,
-        address initiator,
-        bytes calldata wrappedData
+        address sender,
+        bytes calldata data
     )
         external override returns (bool)
     {
         require(msg.sender == address(lendingPool), "Callbacks only allowed from Lending Pool");
-        require(initiator == address(this), "Callbacks only initiated from this contract");
+        require(sender == address(this), "Callbacks only initiated from this contract");
 
-        (bytes memory data, address sender, address receiver) = abi.decode(wrappedData, (bytes, address, address));
+        (address origin, address receiver, bytes memory userData) = abi.decode(data, (address, address, bytes));
 
         // Send the tokens to the original receiver using the ERC-3156 interface
-        IERC20(tokens[0]).transfer(sender, values[0]);
-        IERC3156FlashBorrower(receiver).onFlashLoan(sender, tokens[0], values[0], fees[0], data);
+        IERC20(tokens[0]).transfer(origin, values[0]);
+        IERC3156FlashBorrower(receiver).onFlashLoan(origin, tokens[0], values[0], fees[0], userData);
 
         // Approve the LendingPool contract allowance to *pull* the owed amount
         IERC20(tokens[0]).approve(address(lendingPool), values[0].add(fees[0]));

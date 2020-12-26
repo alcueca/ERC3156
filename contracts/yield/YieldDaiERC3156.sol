@@ -54,23 +54,23 @@ contract YieldDaiERC3156 is IERC3156FlashLender, YieldFlashBorrowerLike {
     }
 
     /// @dev Borrow `daiAmount` as a flash loan.
-    function flashLoan(address receiver, address dai, uint256 daiAmount, bytes memory data) public override {
+    function flashLoan(address receiver, address dai, uint256 daiAmount, bytes memory userData) public override {
         require(dai == address(pool.dai()), "Unsupported Dai contract");
-        bytes memory wrappedData = abi.encode(data, msg.sender, receiver, daiAmount);
+        bytes memory data = abi.encode(msg.sender, receiver, daiAmount, userData);
         uint256 fyDaiAmount = pool.buyDaiPreview(daiAmount.toUint128());
-        pool.fyDai().flashMint(fyDaiAmount, wrappedData); // Callback from fyDai will come back to this contract
+        pool.fyDai().flashMint(fyDaiAmount, data); // Callback from fyDai will come back to this contract
     }
 
     /// @dev FYDai `flashMint` callback.
-    function executeOnFlashMint(uint256 fyDaiAmount, bytes memory wrappedData) public override {
+    function executeOnFlashMint(uint256 fyDaiAmount, bytes memory data) public override {
         require(msg.sender == address(pool.fyDai()), "Callbacks only allowed from fyDai contract");
 
-        (bytes memory data, address sender, address receiver, uint256 daiAmount) = abi.decode(wrappedData, (bytes, address, address, uint256));
+        (address origin, address receiver, uint256 daiAmount, bytes memory userData) = abi.decode(data, (address, address, uint256, bytes));
 
         uint256 paidFYDai = pool.buyDai(address(this), address(receiver), daiAmount.toUint128());
 
         uint256 fee = uint256(pool.buyFYDaiPreview(fyDaiAmount.toUint128())).sub(daiAmount);
-        IERC3156FlashBorrower(receiver).onFlashLoan(sender, address(pool.dai()), daiAmount, fee, data);
+        IERC3156FlashBorrower(receiver).onFlashLoan(origin, address(pool.dai()), daiAmount, fee, userData);
         // Before the end of the transaction, `receiver` must `transfer` the `loanAmount` plus the `fee`
         // to this contract so that the conversions that repay the loan are done.
         pool.sellDai(address(this), address(this), daiAmount.add(fee).toUint128());
