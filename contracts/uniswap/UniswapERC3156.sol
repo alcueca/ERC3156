@@ -6,6 +6,7 @@ import "./interfaces/UniswapV2PairLike.sol";
 import "./interfaces/UniswapV2FactoryLike.sol";
 import "./interfaces/UniswapFlashBorrowerLike.sol";
 
+/// Developed from https://github.com/Austin-Williams/uniswap-flash-swapper
 
 contract UniswapERC3156 is IERC3156FlashLender, UniswapFlashBorrowerLike {
 
