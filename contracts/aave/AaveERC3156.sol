@@ -93,6 +93,8 @@ contract AaveERC3156 is IERC3156FlashLender, AaveFlashBorrowerLike {
      * @return The amount of `token` to be charged for the loan, on top of the returned principal.
      */
     function flashFee(address token, uint256 value) external view override returns (uint256) {
+        AaveDataTypes.ReserveData memory reserveData = lendingPool.getReserveData(token);
+        require(reserveData.aTokenAddress != address(0), "Unsupported currency");
         return value.mul(9).div(10000); // lendingPool.FLASHLOAN_PREMIUM_TOTAL()
     }
 
@@ -103,6 +105,6 @@ contract AaveERC3156 is IERC3156FlashLender, AaveFlashBorrowerLike {
      */
     function flashSupply(address token) external view override returns (uint256) {
         AaveDataTypes.ReserveData memory reserveData = lendingPool.getReserveData(token);
-        return IERC20(token).balanceOf(reserveData.aTokenAddress);
+        return reserveData.aTokenAddress != address(0) ? IERC20(token).balanceOf(reserveData.aTokenAddress) : 0;
     }
 }

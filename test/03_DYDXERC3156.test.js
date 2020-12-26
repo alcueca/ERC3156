@@ -15,29 +15,55 @@ const FlashBorrower = artifacts.require('FlashBorrower');
 contract('DYDXERC3156', (accounts) => {
 
   const [ deployer, user1 ] = accounts;
+  let weth, sai, usdc, dai, borrowerWeth, borrowerDai, solo, lender
   const soloBalance = new BN(100000);
 
   beforeEach(async function () {
-    this.erc20 = await ERC20Mock.new("Test", "TT", { from: deployer });
-    this.borrower = await FlashBorrower.new(this.erc20.address, {from: deployer })
-    this.solo = await SoloMarginMock.new([1], [this.erc20.address], { from: deployer });
+    weth = await ERC20Mock.new("WETH", "WETH", { from: deployer });
+    sai = await ERC20Mock.new("SAI", "SAI", { from: deployer });
+    usdc = await ERC20Mock.new("USDC", "USDC", { from: deployer });
+    dai = await ERC20Mock.new("DAI", "DAI", { from: deployer });
+    solo = await SoloMarginMock.new(
+      [0, 1, 2, 3],
+      [weth.address, sai.address, usdc.address, dai.address],
+      { from: deployer }
+    );
+    lender = await DYDXERC3156.new(solo.address, { from: deployer });
 
-    this.proxy = await DYDXERC3156.new(this.solo.address, { from: deployer });
-    await this.proxy.registerPool(1, { from: deployer });
+    borrowerWeth = await FlashBorrower.new(weth.address, {from: deployer })
+    borrowerDai = await FlashBorrower.new(dai.address, {from: deployer })
 
-    await this.erc20.mint(this.solo.address, soloBalance.toString(), { from: deployer });
-    await this.erc20.mint(this.borrower.address, 2, { from: deployer });
+    await weth.mint(solo.address, soloBalance.toString(), { from: deployer });
+    await dai.mint(solo.address, soloBalance.toString(), { from: deployer });
+    await weth.mint(borrowerWeth.address, 1, { from: deployer });
+    await dai.mint(borrowerDai.address, 2, { from: deployer });
   });
 
   describe('flash loan from dXdY', function () {
-    const underlyingAmount = soloBalance;
 
-    beforeEach(async function () {
-      await this.borrower.flashBorrow(this.proxy.address, underlyingAmount, { from: user1 });
+    it('flash supply', async function () {
+      expect(await lender.flashSupply(weth.address)).to.be.bignumber.equal(soloBalance);
+      expect(await lender.flashSupply(sai.address)).to.be.bignumber.equal("0");
+      expect(await lender.flashSupply(lender.address)).to.be.bignumber.equal("0");
     });
 
-    it('increments solo balance', async function () {
-      expect(await this.erc20.balanceOf(this.solo.address)).to.be.bignumber.equal(soloBalance.addn(1));
+    it('flash fee', async function () {
+      expect(await lender.flashFee(weth.address, soloBalance)).to.be.bignumber.equal("1");
+      expect(await lender.flashFee(dai.address, soloBalance)).to.be.bignumber.equal("2");
+      await expectRevert(
+        lender.flashFee(lender.address, soloBalance),
+        "Unsupported currency"
+      )
+    });
+
+    it('weth flash loan', async function () {
+      await borrowerWeth.flashBorrow(lender.address, soloBalance, { from: user1 });
+      expect(await weth.balanceOf(solo.address)).to.be.bignumber.equal(soloBalance.addn(1));
+    });
+
+    it('dai flash loan', async function () {
+      await borrowerDai.flashBorrow(lender.address, soloBalance, { from: user1 });
+      expect(await dai.balanceOf(solo.address)).to.be.bignumber.equal(soloBalance.addn(2));
     });
   });
 });

@@ -29,3 +29,6 @@ contract MyContract is FlashLender {
 ```
 
 The `_fee` parameter is a divisor to be applied on the flash loaned values. The `receiver` of the `flashLoan` will have to pay back `value + value/fee`. Set the `_fee` to 2 ** 256 - 1 (type(uint256).max) to charge no fees.
+
+## Sources for ERC-3156 wrappers
+Some smart contracts in this project have been developed from files copyrighted by Kollateral, DYDX, Aave, Yield and Austin Williams under several open-source licenses (GPL, AGPL and Apache). All smart contracts have been extensively modified and relicensed under GPLv3.

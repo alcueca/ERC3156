@@ -12,81 +12,56 @@ const MAX = '1157920892373161954235709850086879078532699846656405640394575840079
 
 contract('AaveERC3156', (accounts) => {
   const [deployer, user1] = accounts
-  let currency1, currency2, aToken1, aToken2, lendingPool, lendingPoolAddressProvider, lender
+  let weth, dai, aWeth, aDai, lendingPool, lendingPoolAddressProvider, lender
   let borrower
+  const aaveBalance = new BN(100000);
 
   beforeEach(async () => {
-    currency1 = await ERC20Currency.new("Test1", "TST1", { from: deployer })
-    currency2 = await ERC20Currency.new("Test2", "TST2", { from: deployer })
-    aToken1 = await AToken.new(currency1.address, "AToken1", "ATST1", { from: deployer })
-    aToken2 = await AToken.new(currency2.address, "Atoken2", "ATST2", { from: deployer })
+    weth = await ERC20Currency.new("WETH", "WETH", { from: deployer })
+    dai = await ERC20Currency.new("DAI", "DAI", { from: deployer })
+    aWeth = await AToken.new(weth.address, "AToken1", "ATST1", { from: deployer })
+    aDai = await AToken.new(dai.address, "Atoken2", "ATST2", { from: deployer })
     lendingPool = await LendingPool.new({ from: deployer })
-    await lendingPool.addReserve(aToken1.address, { from: deployer })
-    await lendingPool.addReserve(aToken2.address, { from: deployer })
+    await lendingPool.addReserve(aWeth.address, { from: deployer })
+    await lendingPool.addReserve(aDai.address, { from: deployer })
     lendingPoolAddressProvider = await LendingPoolAddressesProvider.new(lendingPool.address, { from: deployer })
     lender = await AaveERC3156.new(lendingPoolAddressProvider.address, { from: deployer })
 
-    borrower = await FlashBorrower.new(currency1.address, { from: deployer })
+    borrower = await FlashBorrower.new(weth.address, { from: deployer })
 
-    await currency1.mint(aToken1.address, 10000, { from: deployer })
-    await currency2.mint(aToken2.address, 9999, { from: deployer })
+    await weth.mint(aWeth.address, aaveBalance, { from: deployer })
+    await dai.mint(aDai.address, aaveBalance, { from: deployer })
   })
 
-  it('should do a simple flash loan', async () => {
-    await borrower.flashBorrow(lender.address, 1, { from: user1 })
+  it('flash supply', async function () {
+    expect(await lender.flashSupply(weth.address)).to.be.bignumber.equal(aaveBalance);
+    expect(await lender.flashSupply(dai.address)).to.be.bignumber.equal(aaveBalance);
+    expect(await lender.flashSupply(lender.address)).to.be.bignumber.equal("0");
+  });
 
-    let balanceAfter = await currency1.balanceOf(user1)
-    balanceAfter.toString().should.equal(new BN('0').toString())
-    let flashBalance = await borrower.flashBalance()
-    flashBalance.toString().should.equal(new BN('1').toString())
-    let flashValue = await borrower.flashValue()
-    flashValue.toString().should.equal(new BN('1').toString())
-    let flashUser = await borrower.flashUser()
-    flashUser.toString().should.equal(borrower.address)
-  })
-
-  it('should do a loan that pays fees', async () => {
-    await currency1.mint(borrower.address, 9, { from: user1 })
-    await borrower.flashBorrow(lender.address, 10000, { from: user1 })
-
-    const balanceAfter = await currency1.balanceOf(user1)
-    balanceAfter.toString().should.equal(new BN('0').toString())
-    const flashBalance = await borrower.flashBalance()
-    flashBalance.toString().should.equal(new BN('10009').toString())
-    const flashValue = await borrower.flashValue()
-    flashValue.toString().should.equal(new BN('10000').toString())
-    const flashFee = await borrower.flashFee()
-    flashFee.toString().should.equal(new BN('9').toString())
-    const flashUser = await borrower.flashUser()
-    flashUser.toString().should.equal(borrower.address)
-  })
-
-  /*
-  it('should do a simple flash loan from an EOA', async () => {
-    await lender.flashLoan(borrower.address, currency1.address, 1, '0x0000000000000000000000000000000000000000000000000000000000000000', { from: user1 })
-
-    const balanceAfter = await currency1.balanceOf(user1)
-    balanceAfter.toString().should.equal(new BN('0').toString())
-    const flashBalance = await borrower.flashBalance()
-    flashBalance.toString().should.equal(new BN('1').toString())
-    const flashValue = await borrower.flashValue()
-    flashValue.toString().should.equal(new BN('1').toString())
-    const flashUser = await borrower.flashUser()
-    flashUser.toString().should.equal(user1)
-  })
-
-  it('needs to return funds after a flash loan', async () => {
+  it('flash fee', async function () {
+    expect(await lender.flashFee(weth.address, aaveBalance)).to.be.bignumber.equal(aaveBalance.muln(9).divn(10000));
+    expect(await lender.flashFee(dai.address, aaveBalance)).to.be.bignumber.equal(aaveBalance.muln(9).divn(10000));
     await expectRevert(
-      borrower.flashBorrowAndSteal(lender.address, 1, { from: deployer }),
-      'FlashLender: unpaid loan'
+      lender.flashFee(lender.address, aaveBalance),
+      "Unsupported currency"
     )
-  })
+  });
 
-  it('should do two nested flash loans', async () => {
-    await borrower.flashBorrowAndReenter(lender.address, 1, { from: deployer })
+  it('weth flash loan', async () => {
+    const fee = aaveBalance.muln(9).divn(10000)
+    await weth.mint(borrower.address, fee, { from: user1 })
+    await borrower.flashBorrow(lender.address, aaveBalance, { from: user1 })
 
+    const balanceAfter = await weth.balanceOf(user1)
+    balanceAfter.toString().should.equal(new BN('0').toString())
     const flashBalance = await borrower.flashBalance()
-    flashBalance.toString().should.equal('3')
+    flashBalance.toString().should.equal(aaveBalance.add(fee).toString())
+    const flashValue = await borrower.flashValue()
+    flashValue.toString().should.equal(aaveBalance.toString())
+    const flashFee = await borrower.flashFee()
+    flashFee.toString().should.equal(fee.toString())
+    const flashUser = await borrower.flashUser()
+    flashUser.toString().should.equal(borrower.address)
   })
-  */
 })

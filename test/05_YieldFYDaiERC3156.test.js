@@ -8,15 +8,31 @@ const FlashBorrower = artifacts.require('FlashBorrower');
 contract('YieldFYDaiERC3156', (accounts) => {
 
   const [ deployer, user1 ] = accounts;
+  let fyDai, lender, borrower
+  const MAX_UINT112 = "5192296858534827628530496329220095"
 
   beforeEach(async function () {
     // Setup fyDai
     const block = await web3.eth.getBlockNumber()
-    maturity0 = (await web3.eth.getBlock(block)).timestamp + 15778476 // Six months
+    const maturity0 = (await web3.eth.getBlock(block)).timestamp + 15778476 // Six months
 
     fyDai = await FYDaiMock.new("Test", "TST", maturity0, {from: deployer })
-    lender = await YieldFYDaiERC3156.new({from: deployer })
+    lender = await YieldFYDaiERC3156.new([fyDai.address], { from: deployer })
     borrower = await FlashBorrower.new(fyDai.address, {from: deployer })
+  });
+
+  it('flash supply', async function () {
+    expect(await lender.flashSupply(fyDai.address)).to.be.bignumber.equal(MAX_UINT112);
+    expect(await lender.flashSupply(lender.address)).to.be.bignumber.equal("0");
+  });
+
+  it('flash fee', async function () {
+    const loan = new BN("1000")
+    expect(await lender.flashFee(fyDai.address, loan)).to.be.bignumber.equal("0");
+    await expectRevert(
+      lender.flashFee(lender.address, loan),
+      "Unsupported currency"
+    )
   });
 
   it('simple flash loan', async function () {
