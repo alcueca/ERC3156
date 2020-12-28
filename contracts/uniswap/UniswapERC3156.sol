@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// Developed from https://github.com/Austin-Williams/uniswap-flash-swapper
+// Derived from https://github.com/Austin-Williams/uniswap-flash-swapper
 
 pragma solidity 0.7.5;
 

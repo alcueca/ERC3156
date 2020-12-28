@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
+// Derived from https://github.com/yieldprotocol/fyDai
 pragma solidity ^0.7.5;
 
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";

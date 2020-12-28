@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
+// Derived from https://github.com/kollateral/kollateral
 pragma solidity ^0.7.5;
 
 library DYDXDataTypes {

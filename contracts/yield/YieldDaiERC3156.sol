@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
+// Derived from https://github.com/yieldprotocol/fyDai-flash
 pragma solidity ^0.7.5;
 
 import "@openzeppelin/contracts/math/SafeMath.sol";
@@ -31,7 +32,7 @@ contract YieldDaiERC3156 is IERC3156FlashLender, YieldFlashBorrowerLike {
 
     /// @dev Fee charged on top of a Dai flash loan.
     function flashFee(address dai, uint256 daiBorrowed) public view override returns (uint256) {
-        require(dai == address(pool.dai()), "Unsupported Dai contract");
+        require(dai == address(pool.dai()), "Unsupported currency");
         uint128 fyDaiAmount = pool.buyDaiPreview(daiBorrowed.toUint128());
 
         // To obtain the result of a trade on hypothetical reserves we need to call the YieldMath library
@@ -49,13 +50,12 @@ contract YieldDaiERC3156 is IERC3156FlashLender, YieldFlashBorrowerLike {
 
     /// @dev Maximum Dai flash loan available.
     function flashSupply(address dai) public view override returns (uint256) {
-        require(dai == address(pool.dai()), "Unsupported Dai contract");
-        return pool.getDaiReserves();
+        return dai == address(pool.dai()) ? pool.getDaiReserves() : 0;
     }
 
     /// @dev Borrow `daiAmount` as a flash loan.
     function flashLoan(address receiver, address dai, uint256 daiAmount, bytes memory userData) public override {
-        require(dai == address(pool.dai()), "Unsupported Dai contract");
+        require(dai == address(pool.dai()), "Unsupported currency");
         bytes memory data = abi.encode(msg.sender, receiver, daiAmount, userData);
         uint256 fyDaiAmount = pool.buyDaiPreview(daiAmount.toUint128());
         pool.fyDai().flashMint(fyDaiAmount, data); // Callback from fyDai will come back to this contract
