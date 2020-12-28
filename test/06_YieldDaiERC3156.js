@@ -9,7 +9,7 @@ require('chai').use(require('chai-as-promised')).should()
 
 
 contract('YieldDaiERC3156', async (accounts) => {
-  let [owner, user1] = accounts
+  let [deployer, user1] = accounts
 
   const initialDai = "120000000000000000000"
 
@@ -31,7 +31,7 @@ contract('YieldDaiERC3156', async (accounts) => {
     fyDai = await FYDaiMock.new("Test", "TST", maturity0)
 
     // Setup Pools
-    pool = await Pool.new(dai.address, fyDai.address, 'Name', 'Symbol', { from: owner })
+    pool = await Pool.new(dai.address, fyDai.address, 'Name', 'Symbol')
 
     // Initialize pools
     const additionalFYDaiReserves = "34400000000000000000"
@@ -39,16 +39,13 @@ contract('YieldDaiERC3156', async (accounts) => {
     await dai.mint(user1, initialDai, { from: user1 })
     await dai.approve(pool.address, initialDai, { from: user1 })
     await pool.mint(user1, user1, initialDai, { from: user1 })
-    await fyDai.mint(owner, additionalFYDaiReserves, { from: owner })
-    await fyDai.approve(pool.address, additionalFYDaiReserves, { from: owner })
-    await pool.sellFYDai(owner, owner, additionalFYDaiReserves, { from: owner })
+    await fyDai.mint(pool.address, additionalFYDaiReserves)
 
     // Set up the ERC3156 wrapper
-    lender = await YieldDaiERC3156.new({ from: owner })
-    await lender.setPool(pool.address, { from: owner })
+    lender = await YieldDaiERC3156.new(pool.address)
 
     // Set up the borrrower
-    borrower = await FlashBorrower.new(dai.address, { from: owner })
+    borrower = await FlashBorrower.new()
   })
 
   it('should do a simple flash loan', async () => {
@@ -61,7 +58,7 @@ contract('YieldDaiERC3156', async (accounts) => {
     await dai.transfer(borrower.address, ONE, { from: user1 })
 
     const balanceBefore = await dai.balanceOf(borrower.address)
-    await borrower.flashBorrow(lender.address, loan, { from: user1 })
+    await borrower.flashBorrow(lender.address, dai.address, loan, { from: user1 })
 
     assert.equal(await borrower.flashUser(), borrower.address)
     assert.equal((await borrower.flashValue()).toString(), loan.toString())
