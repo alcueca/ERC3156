@@ -2,6 +2,6 @@
 pragma solidity ^0.7.5;
 
 
-interface UniswapFlashBorrowerLike {
+interface UniswapV2FlashBorrowerLike {
   function uniswapV2Call(address _sender, uint _amount0, uint _amount1, bytes calldata _data) external;
 }

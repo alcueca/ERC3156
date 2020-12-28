@@ -5,11 +5,11 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { IERC3156FlashBorrower, IERC3156FlashLender } from "../interfaces/IERC3156.sol";
 import "./interfaces/UniswapV2PairLike.sol";
 import "./interfaces/UniswapV2FactoryLike.sol";
-import "./interfaces/UniswapFlashBorrowerLike.sol";
+import "./interfaces/UniswapV2FlashBorrowerLike.sol";
 
 /// Developed from https://github.com/Austin-Williams/uniswap-flash-swapper
 
-contract UniswapERC3156 is IERC3156FlashLender, UniswapFlashBorrowerLike {
+contract UniswapERC3156 is IERC3156FlashLender, UniswapV2FlashBorrowerLike {
 
     // CONSTANTS
     UniswapV2FactoryLike constant uniswapV2Factory = UniswapV2FactoryLike(0x5C69bEe701ef814a2B6a3EDD4B1652CB9cc5aA6f); // same for all networks
@@ -22,7 +22,7 @@ contract UniswapERC3156 is IERC3156FlashLender, UniswapFlashBorrowerLike {
     address WETH;
     address DAI;
 
-    constructor(address _DAI, address _WETH) public {
+    constructor(address _DAI, address _WETH) {
         WETH = _WETH;
         DAI = _DAI;
     }
