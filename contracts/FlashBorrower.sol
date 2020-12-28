@@ -15,6 +15,7 @@ contract FlashBorrower is IERC3156FlashBorrower {
     uint256 public flashValue;
     uint256 public flashFee;
 
+    /// @dev ERC-3156 Flash loan callback
     function onFlashLoan(address user, address token, uint256 value, uint256 fee, bytes calldata data) external override {
         (Action action) = abi.decode(data, (Action)); // Use this to unpack arbitrary data
         flashUser = user;

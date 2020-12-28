@@ -22,17 +22,30 @@ contract UniswapERC3156 is IERC3156FlashLender, UniswapV2FlashBorrowerLike {
     address weth;
     address dai;
 
+    /// @param factory_ Uniswap v2 UniswapV2Factory address
+    /// @param weth_ Weth contract used in Uniswap v2 Pairs
+    /// @param dai_ Dai contract used in Uniswap v2 Pairs
     constructor(UniswapV2FactoryLike factory_, address weth_, address dai_) {
         factory = factory_;
         weth = weth_;
         dai = dai_;
     }
 
+    /**
+     * @dev Get the Uniswap Pair that will be used as the source of a loan. The opposite token will be Weth, except for Weth that will be Dai.
+     * @param token The loan currency.
+     * @return The Uniswap V2 Pair that will be used as the source of the flash loan.
+     */
     function getPairAddress(address token) public view returns (address) {
         address tokenOther = token == weth ? dai : weth;
         return factory.getPair(token, tokenOther);
     }
 
+    /**
+     * @dev From ERC-3156. The amount of currency available to be lended.
+     * @param token The loan currency.
+     * @return The amount of `token` that can be borrowed.
+     */
     function flashSupply(address token) external view override returns (uint256) {
         address pairAddress = getPairAddress(token);
         if (pairAddress != address(0)) {
@@ -42,11 +55,24 @@ contract UniswapERC3156 is IERC3156FlashLender, UniswapV2FlashBorrowerLike {
         return 0;
     }
 
+    /**
+     * @dev From ERC-3156. The fee to be charged for a given loan.
+     * @param token The loan currency.
+     * @param amount The amount of tokens lent.
+     * @return The amount of `token` to be charged for the loan, on top of the returned principal.
+     */
     function flashFee(address token, uint256 amount) public view override returns (uint256) {
         require(getPairAddress(token) != address(0), "Unsupported currency");
         return ((amount * 3) / 997) + 1;
     }
 
+    /**
+     * @dev From ERC-3156. Loan `amount` tokens to `receiver`, which needs to return them plus fee to this contract within the same transaction.
+     * @param receiver The contract receiving the tokens, needs to implement the `onFlashLoan(address user, uint256 amount, uint256 fee, bytes calldata)` interface.
+     * @param token The loan currency.
+     * @param amount The amount of tokens lent.
+     * @param userData A data parameter to be passed on to the `receiver` for any custom use.
+     */
     function flashLoan(address receiver, address token, uint256 amount, bytes memory userData) external override {
         address pairAddress = getPairAddress(token);
         require(pairAddress != address(0), "Unsupported currency");
@@ -68,7 +94,7 @@ contract UniswapERC3156 is IERC3156FlashLender, UniswapV2FlashBorrowerLike {
         pair.swap(amount0Out, amount1Out, address(this), data);
     }
 
-    // @notice Function is called by the Uniswap V2 pair's `swap` function
+    /// @dev Uniswap flash loan callback. It sends the value borrowed to `receiver`, and expects that the value plus the fee will be transferred back.
     function uniswapV2Call(address sender, uint amount0, uint amount1, bytes calldata data) external override {
         // access control
         require(msg.sender == permissionedPairAddress, "only permissioned UniswapV2 pair can call");

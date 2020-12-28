@@ -29,6 +29,7 @@ contract DYDXERC3156 is IERC3156FlashLender, DYDXFlashBorrowerLike {
     mapping(address => uint256) public tokenAddressToMarketId;
     mapping(address => bool) public tokensRegistered;
 
+    /// @param soloMargin_ DYDX SoloMargin address
     constructor (SoloMarginLike soloMargin_) {
         soloMargin = soloMargin_;
         uint256 marketId = 0;
@@ -45,16 +46,34 @@ contract DYDXERC3156 is IERC3156FlashLender, DYDXFlashBorrowerLike {
         }
     }
 
+    /**
+     * @dev From ERC-3156. The amount of currency available to be lended.
+     * @param token The loan currency.
+     * @return The amount of `token` that can be borrowed.
+     */
     function flashSupply(address token) external view override returns (uint256) {
         return tokensRegistered[token] == true ? IERC20(token).balanceOf(address(soloMargin)) : 0;
     }
 
-    function flashFee(address token, uint256) public view override returns (uint256) {
+    /**
+     * @dev From ERC-3156. The fee to be charged for a given loan.
+     * @param token The loan currency.
+     * @param amount The amount of tokens lent.
+     * @return The amount of `token` to be charged for the loan, on top of the returned principal.
+     */
+    function flashFee(address token, uint256 amount) public view override returns (uint256) {
         require(tokensRegistered[token], "Unsupported currency");
         // Add 1 wei for markets 0-1 and 2 wei for markets 2-3
-        return marketIdFromTokenAddress(token) < 2 ? 1 : 2;
+        return tokenAddressToMarketId[token] < 2 ? 1 : 2;
     }
 
+    /**
+     * @dev From ERC-3156. Loan `value` tokens to `receiver`, which needs to return them plus fee to this contract within the same transaction.
+     * @param receiver The contract receiving the tokens, needs to implement the `onFlashLoan(address user, uint256 value, uint256 fee, bytes calldata)` interface.
+     * @param token The loan currency.
+     * @param amount The amount of tokens lent.
+     * @param userData A data parameter to be passed on to the `receiver` for any custom use.
+     */
     function flashLoan(address receiver, address token, uint256 amount, bytes memory userData) external override {
         DYDXDataTypes.ActionArgs[] memory operations = new DYDXDataTypes.ActionArgs[](3);
         operations[0] = getWithdrawAction(token, amount);
@@ -66,6 +85,7 @@ contract DYDXERC3156 is IERC3156FlashLender, DYDXFlashBorrowerLike {
         soloMargin.operate(accountInfos, operations);
     }
 
+    /// @dev DYDX flash loan callback. It sends the value borrowed to `receiver`, and expects that the value plus the fee will be transferred back.
     function callFunction(
         address sender,
         DYDXDataTypes.AccountInfo memory,
@@ -106,7 +126,7 @@ contract DYDXERC3156 is IERC3156FlashLender, DYDXFlashBorrowerLike {
                 ref: DYDXDataTypes.AssetReference.Delta,
                 value: amount
             }),
-            primaryMarketId: marketIdFromTokenAddress(token),
+            primaryMarketId: tokenAddressToMarketId[token],
             secondaryMarketId: NULL_MARKET_ID,
             otherAddress: address(this),
             otherAccountId: NULL_ACCOUNT_ID,
@@ -128,7 +148,7 @@ contract DYDXERC3156 is IERC3156FlashLender, DYDXFlashBorrowerLike {
                 ref: DYDXDataTypes.AssetReference.Delta,
                 value: repaymentAmount
             }),
-            primaryMarketId: marketIdFromTokenAddress(token),
+            primaryMarketId: tokenAddressToMarketId[token],
             secondaryMarketId: NULL_MARKET_ID,
             otherAddress: address(this),
             otherAccountId: NULL_ACCOUNT_ID,
@@ -151,9 +171,5 @@ contract DYDXERC3156 is IERC3156FlashLender, DYDXFlashBorrowerLike {
             otherAccountId: NULL_ACCOUNT_ID,
             data: data_
         });
-    }
-
-    function marketIdFromTokenAddress(address token) internal view returns (uint256) {
-        return tokenAddressToMarketId[token];
     }
 }

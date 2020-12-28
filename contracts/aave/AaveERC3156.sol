@@ -21,27 +21,48 @@ contract AaveERC3156 is IERC3156FlashLender, AaveFlashBorrowerLike {
 
     LendingPoolLike public lendingPool;
 
-    mapping(address => address) public underlyingToAsset;
-
+    /// @param provider Aave v2 LendingPoolAddresses address
     constructor(LendingPoolAddressesProviderLike provider) {
         lendingPool = LendingPoolLike(provider.getLendingPool());
     }
 
     /**
-     * @dev Loan `value` tokens to `receiver`, which needs to return them plus fee to this contract within the same transaction.
-     * @param receiver The contract receiving the tokens, needs to implement the `onFlashLoan(address user, uint256 value, uint256 fee, bytes calldata)` interface.
+     * @dev From ERC-3156. The amount of currency available to be lended.
      * @param token The loan currency.
-     * @param value The amount of tokens lent.
+     * @return The amount of `token` that can be borrowed.
+     */
+    function flashSupply(address token) external view override returns (uint256) {
+        AaveDataTypes.ReserveData memory reserveData = lendingPool.getReserveData(token);
+        return reserveData.aTokenAddress != address(0) ? IERC20(token).balanceOf(reserveData.aTokenAddress) : 0;
+    }
+
+    /**
+     * @dev From ERC-3156. The fee to be charged for a given loan.
+     * @param token The loan currency.
+     * @param amount The amount of tokens lent.
+     * @return The amount of `token` to be charged for the loan, on top of the returned principal.
+     */
+    function flashFee(address token, uint256 amount) external view override returns (uint256) {
+        AaveDataTypes.ReserveData memory reserveData = lendingPool.getReserveData(token);
+        require(reserveData.aTokenAddress != address(0), "Unsupported currency");
+        return amount.mul(9).div(10000); // lendingPool.FLASHLOAN_PREMIUM_TOTAL()
+    }
+
+    /**
+     * @dev From ERC-3156. Loan `amount` tokens to `receiver`, which needs to return them plus fee to this contract within the same transaction.
+     * @param receiver The contract receiving the tokens, needs to implement the `onFlashLoan(address user, uint256 amount, uint256 fee, bytes calldata)` interface.
+     * @param token The loan currency.
+     * @param amount The amount of tokens lent.
      * @param userData A data parameter to be passed on to the `receiver` for any custom use.
      */
-    function flashLoan(address receiver, address token, uint256 value, bytes calldata userData) external override {
+    function flashLoan(address receiver, address token, uint256 amount, bytes calldata userData) external override {
         address receiverAddress = address(this);
 
         address[] memory tokens = new address[](1);
         tokens[0] = address(token);
 
-        uint256[] memory values = new uint256[](1);
-        values[0] = value;
+        uint256[] memory amounts = new uint256[](1);
+        amounts[0] = amount;
 
         // 0 = no debt, 1 = stable, 2 = variable
         uint256[] memory modes = new uint256[](1);
@@ -54,7 +75,7 @@ contract AaveERC3156 is IERC3156FlashLender, AaveFlashBorrowerLike {
         lendingPool.flashLoan(
             receiverAddress,
             tokens,
-            values,
+            amounts,
             modes,
             onBehalfOf,
             data,
@@ -62,10 +83,10 @@ contract AaveERC3156 is IERC3156FlashLender, AaveFlashBorrowerLike {
         );
     }
 
-    /// @dev Aave flash loan callback. It sends the value borrowed to `receiver`, and expects that the value plus the fee will be transferred back.
+    /// @dev Aave flash loan callback. It sends the amount borrowed to `receiver`, and expects that the amount plus the fee will be transferred back.
     function executeOperation(
         address[] calldata tokens,
-        uint256[] calldata values,
+        uint256[] calldata amounts,
         uint256[] calldata fees,
         address sender,
         bytes calldata data
@@ -78,34 +99,12 @@ contract AaveERC3156 is IERC3156FlashLender, AaveFlashBorrowerLike {
         (address origin, address receiver, bytes memory userData) = abi.decode(data, (address, address, bytes));
 
         // Send the tokens to the original receiver using the ERC-3156 interface
-        IERC20(tokens[0]).transfer(origin, values[0]);
-        IERC3156FlashBorrower(receiver).onFlashLoan(origin, tokens[0], values[0], fees[0], userData);
+        IERC20(tokens[0]).transfer(origin, amounts[0]);
+        IERC3156FlashBorrower(receiver).onFlashLoan(origin, tokens[0], amounts[0], fees[0], userData);
 
         // Approve the LendingPool contract allowance to *pull* the owed amount
-        IERC20(tokens[0]).approve(address(lendingPool), values[0].add(fees[0]));
+        IERC20(tokens[0]).approve(address(lendingPool), amounts[0].add(fees[0]));
 
         return true;
-    }
-
-    /**
-     * @dev The fee to be charged for a given loan.
-     * @param token The loan currency.
-     * @param value The amount of tokens lent.
-     * @return The amount of `token` to be charged for the loan, on top of the returned principal.
-     */
-    function flashFee(address token, uint256 value) external view override returns (uint256) {
-        AaveDataTypes.ReserveData memory reserveData = lendingPool.getReserveData(token);
-        require(reserveData.aTokenAddress != address(0), "Unsupported currency");
-        return value.mul(9).div(10000); // lendingPool.FLASHLOAN_PREMIUM_TOTAL()
-    }
-
-    /**
-     * @dev The amount of currency available to be lended.
-     * @param token The loan currency.
-     * @return The amount of `token` that can be borrowed.
-     */
-    function flashSupply(address token) external view override returns (uint256) {
-        AaveDataTypes.ReserveData memory reserveData = lendingPool.getReserveData(token);
-        return reserveData.aTokenAddress != address(0) ? IERC20(token).balanceOf(reserveData.aTokenAddress) : 0;
     }
 }

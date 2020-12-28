@@ -12,35 +12,51 @@ import { IERC3156FlashBorrower, IERC3156FlashLender } from "../interfaces/IERC31
  */
 contract YieldFYDaiERC3156 is IERC3156FlashLender, YieldFlashBorrowerLike {
 
-    mapping(address => bool) public tokensRegistered;
+    mapping(address => bool) public fyDaisSupported;
 
+    /// @param fyDais List of Yield FYDai contracts that will be supported for flash lending.
     constructor (address[] memory fyDais) {
         for (uint256 i = 0; i < fyDais.length; i++) {
-            tokensRegistered[fyDais[i]] = true;
+            fyDaisSupported[fyDais[i]] = true;
         }
     }
 
-    /// @dev Fee charged on top of a fyDai flash loan.
-    function flashFee(address token, uint256) public view override returns (uint256) {
-        require(tokensRegistered[token], "Unsupported currency");
+    /**
+     * @dev From ERC-3156. The amount of currency available to be lended.
+     * @param token The loan currency. It must be a FYDai contract.
+     * @return The amount of `token` that can be borrowed.
+     */
+    function flashSupply(address token) public view override returns (uint256) {
+        return fyDaisSupported[token] ? type(uint112).max - IFYDai(token).totalSupply() : 0;
+    }
+
+    /**
+     * @dev From ERC-3156. The fee to be charged for a given loan.
+     * @param token The loan currency. It must be a FYDai.
+     * @param amount The amount of tokens lent.
+     * @return The amount of `token` to be charged for the loan, on top of the returned principal.
+     */
+    function flashFee(address token, uint256 amount) public view override returns (uint256) {
+        require(fyDaisSupported[token], "Unsupported currency");
         return 0;
     }
 
-    /// @dev Maximum fyDai flash loan available.
-    function flashSupply(address token) public view override returns (uint256) {
-        return tokensRegistered[token] ? type(uint112).max - IFYDai(token).totalSupply() : 0;
-    }
-
-    /// @dev ERC-3156 entry point to send `fyDaiAmount` fyDai to `receiver` as a flash loan.
-    function flashLoan(address receiver, address fyDai, uint256 fyDaiAmount, bytes memory userData) public override {
+    /**
+     * @dev From ERC-3156. Loan `amount` fyDai to `receiver`, which needs to return them plus fee to this contract within the same transaction.
+     * @param receiver The contract receiving the tokens, needs to implement the `onFlashLoan(address user, uint256 amount, uint256 fee, bytes calldata)` interface.
+     * @param token The loan currency. Must be a fyDai contract.
+     * @param amount The amount of tokens lent.
+     * @param userData A data parameter to be passed on to the `receiver` for any custom use.
+     */
+    function flashLoan(address receiver, address token, uint256 amount, bytes memory userData) public override {
         bytes memory data = abi.encode(msg.sender, receiver, userData);
-        IFYDai(fyDai).flashMint(fyDaiAmount, data);
+        IFYDai(token).flashMint(amount, data);
     }
 
-    /// @dev FYDai `flashMint` callback, which bridges to the ERC-3156 `onFlashLoan` callback.
-    function executeOnFlashMint(uint256 fyDaiAmount, bytes memory data) public override {
+    /// @dev FYDai flash loan callback. It sends the value borrowed to `receiver`, and expects that the value plus the fee will be transferred back.
+    function executeOnFlashMint(uint256 amount, bytes memory data) public override {
         (address origin, address receiver, bytes memory userData) = abi.decode(data, (address, address, bytes));
-        IFYDai(msg.sender).transfer(receiver, fyDaiAmount);
-        IERC3156FlashBorrower(receiver).onFlashLoan(origin, msg.sender, fyDaiAmount, 0, userData); // msg.sender is the lending fyDai contract
+        IFYDai(msg.sender).transfer(receiver, amount);
+        IERC3156FlashBorrower(receiver).onFlashLoan(origin, msg.sender, amount, 0, userData); // msg.sender is the lending fyDai contract
     }
 }

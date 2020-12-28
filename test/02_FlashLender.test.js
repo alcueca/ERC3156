@@ -16,7 +16,7 @@ contract('FlashLender', (accounts) => {
   beforeEach(async () => {
     weth = await ERC20Currency.new("WETH", "WETH")
     dai = await ERC20Currency.new("DAI", "DAI")
-    lender = await FlashLender.new(weth.address, dai.address, 1000)
+    lender = await FlashLender.new([weth.address, dai.address], 1000)
     borrower = await FlashBorrower.new()
 
     await weth.mint(lender.address, 1000)
@@ -70,7 +70,7 @@ contract('FlashLender', (accounts) => {
   })
 
   it('lenders can choose to charge no fees', async () => {
-    lender = await FlashLender.new(weth.address, dai.address, MAX)
+    lender = await FlashLender.new([weth.address, dai.address], MAX)
     await weth.mint(lender.address, 1000)
 
     await borrower.flashBorrow(lender.address, weth.address, 1000, { from: user1 })
