@@ -12,7 +12,7 @@ contract SoloMarginMock is SoloMarginLike {
 
     mapping(uint256 => address) internal _markets;
 
-    constructor(uint256[] memory marketIds, address[] memory tokenAddresses) public {
+    constructor(uint256[] memory marketIds, address[] memory tokenAddresses) {
         for (uint256 i = 0; i < marketIds.length; i++) {
             _markets[marketIds[i]] = tokenAddresses[i];
         }

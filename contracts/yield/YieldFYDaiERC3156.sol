@@ -13,7 +13,7 @@ contract YieldFYDaiERC3156 is IERC3156FlashLender, YieldFlashBorrowerLike {
 
     mapping(address => bool) public tokensRegistered;
 
-    constructor (address[] memory fyDais) public {
+    constructor (address[] memory fyDais) {
         for (uint256 i = 0; i < fyDais.length; i++) {
             tokensRegistered[fyDais[i]] = true;
         }

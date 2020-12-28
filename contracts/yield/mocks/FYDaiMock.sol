@@ -9,7 +9,7 @@ contract FYDaiMock is ERC20  {
 
     uint256 public maturity;
 
-    constructor(string memory name, string memory symbol, uint256 maturity_) public ERC20(name, symbol) {
+    constructor(string memory name, string memory symbol, uint256 maturity_) ERC20(name, symbol) {
         maturity = maturity_;
     }
 

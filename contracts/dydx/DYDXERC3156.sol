@@ -27,7 +27,7 @@ contract DYDXERC3156 is IERC3156FlashLender, DYDXFlashBorrowerLike {
     mapping(address => uint256) public tokenAddressToMarketId;
     mapping(address => bool) public tokensRegistered;
 
-    constructor (SoloMarginLike soloMargin_) public {
+    constructor (SoloMarginLike soloMargin_) {
         soloMargin = soloMargin_;
         uint256 marketId = 0;
         while (true) {
@@ -47,7 +47,7 @@ contract DYDXERC3156 is IERC3156FlashLender, DYDXFlashBorrowerLike {
         return tokensRegistered[token] == true ? IERC20(token).balanceOf(address(soloMargin)) : 0;
     }
 
-    function flashFee(address token, uint256 amount) public view override returns (uint256) {
+    function flashFee(address token, uint256) public view override returns (uint256) {
         require(tokensRegistered[token], "Unsupported currency");
         // Add 1 wei for markets 0-1 and 2 wei for markets 2-3
         return marketIdFromTokenAddress(token) < 2 ? 1 : 2;
@@ -66,7 +66,7 @@ contract DYDXERC3156 is IERC3156FlashLender, DYDXFlashBorrowerLike {
 
     function callFunction(
         address sender,
-        DYDXDataTypes.AccountInfo memory accountInfo,
+        DYDXDataTypes.AccountInfo memory,
         bytes memory data
     )
     public override
