@@ -1,34 +1,5 @@
 # ERC20 Flash
 
-This project is the reference implementation the the [ERC 3156 Flash Loan](https://github.com/ethereum/EIPs/pull/3156) standard.
+This project is the reference implementation the [ERC 3156 Flash Loan](https://github.com/ethereum/EIPs/pull/3156) standard.
 
-The contracts included inherit from OpenZeppelin's ERC20.
-
-## How to Use
-
-`ERC20FlashMinter` is an `ERC20` contract with flash minting capabilities.
-
-```
-contract MyContract is ERC20FlashMinter {
-
-    constructor (..., string memory _name, string memory _symbol, uint256 _fee) public ERC20FlashMinter(_name, _symbol, _fee) {...}
-
-    ...
-}
-```
-
-`FlashLender` holds tokens from two `ERC20` contract as assets and has flash lending capabilities.
-
-```
-contract MyContract is FlashLender {
-
-    constructor (..., IERC20 _asset1, IERC20 _asset2, uint256 _fee) public FlashLender(_asset1, _asset2, _fee) {...}
-
-    ...
-}
-```
-
-The `_fee` parameter is a divisor to be applied on the flash loaned values. The `receiver` of the `flashLoan` will have to pay back `value + value/fee`. Set the `_fee` to 2 ** 256 - 1 (type(uint256).max) to charge no fees.
-
-## Sources for ERC-3156 wrappers
-Some smart contracts in this project have been developed from files copyrighted by Kollateral, DYDX, Aave, Yield and Austin Williams under several open-source licenses (GPL, AGPL and Apache). All smart contracts have been extensively modified and relicensed under GPLv3.
+This project also implements ERC-3156 wrappers for the flash loan functionality of dYdX, Aave, Uniswap and Yield.
