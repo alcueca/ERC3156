@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Derived from https://github.com/Uniswap/uniswap-v2-core/blob/master/contracts/UniswapV2Pair.sol
+
 pragma solidity ^0.7.5;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
@@ -7,7 +8,8 @@ import "@openzeppelin/contracts/math/SafeMath.sol";
 import "../interfaces/UniswapV2FlashBorrowerLike.sol";
 import "../interfaces/UniswapV2PairLike.sol";
 
-contract UniswapV2Pair is UniswapV2PairLike {
+
+contract UniswapV2PairMock is UniswapV2PairLike {
     using SafeMath  for uint;
 
     address public factory;
@@ -36,16 +38,10 @@ contract UniswapV2Pair is UniswapV2PairLike {
     }
 
     // called once by the factory at time of deployment
-    function initialize(address _token0, address _token1) external {
+    function initialize(address _token0, address _token1) external override {
         require(msg.sender == factory, "UniswapV2: FORBIDDEN"); // sufficient check
         token0 = _token0;
         token1 = _token1;
-    }
-
-    function _update(uint balance0, uint balance1) private {
-        require(balance0 <= uint112(-1) && balance1 <= uint112(-1), "UniswapV2: OVERFLOW");
-        reserve0 = uint112(balance0);
-        reserve1 = uint112(balance1);
     }
 
     function mint() external {
@@ -84,5 +80,11 @@ contract UniswapV2Pair is UniswapV2PairLike {
 
         _update(balance0, balance1);
         emit Swap(msg.sender, amount0In, amount1In, amount0Out, amount1Out, to);
+    }
+
+    function _update(uint balance0, uint balance1) private {
+        require(balance0 <= uint112(-1) && balance1 <= uint112(-1), "UniswapV2: OVERFLOW");
+        reserve0 = uint112(balance0);
+        reserve1 = uint112(balance1);
     }
 }
