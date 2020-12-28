@@ -11,7 +11,8 @@ require('chai').use(require('chai-as-promised')).should()
 contract('YieldDaiERC3156', async (accounts) => {
   let [deployer, user1] = accounts
 
-  const initialDai = "120000000000000000000"
+  const pooledDai = "1000000000000000000"
+  const pooledFYDai = "300000000000000000"
 
   let dai
   let pool
@@ -34,12 +35,10 @@ contract('YieldDaiERC3156', async (accounts) => {
     pool = await Pool.new(dai.address, fyDai.address, 'Name', 'Symbol')
 
     // Initialize pools
-    const additionalFYDaiReserves = "34400000000000000000"
-
-    await dai.mint(user1, initialDai, { from: user1 })
-    await dai.approve(pool.address, initialDai, { from: user1 })
-    await pool.mint(user1, user1, initialDai, { from: user1 })
-    await fyDai.mint(pool.address, additionalFYDaiReserves)
+    await dai.mint(user1, pooledDai, { from: user1 })
+    await dai.approve(pool.address, pooledDai, { from: user1 })
+    await pool.mint(user1, user1, pooledDai, { from: user1 })
+    await fyDai.mint(pool.address, pooledFYDai)
 
     // Set up the ERC3156 wrapper
     lender = await YieldDaiERC3156.new(pool.address)
@@ -47,6 +46,20 @@ contract('YieldDaiERC3156', async (accounts) => {
     // Set up the borrrower
     borrower = await FlashBorrower.new()
   })
+
+  it('flash supply', async function () {
+    expect(await lender.flashSupply(dai.address)).to.be.bignumber.equal(await dai.balanceOf(pool.address));
+    expect(await lender.flashSupply(lender.address)).to.be.bignumber.equal("0");
+  });
+
+  it('flash fee', async function () {
+    const loan = new BN("1000000000000000000")
+    expect(await lender.flashFee(dai.address, loan)).to.be.bignumber.gt("0");
+    await expectRevert(
+      lender.flashFee(lender.address, loan),
+      "Unsupported currency"
+    )
+  });
 
   it('should do a simple flash loan', async () => {
     const ONE = new BN("1000000000000000000")
