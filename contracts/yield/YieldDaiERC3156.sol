@@ -19,7 +19,7 @@ contract YieldDaiERC3156 is IERC3156FlashLender, YieldFlashBorrowerLike {
 
     IPool public pool;
 
-    function setPool(IPool pool_) public {
+    constructor (IPool pool_) {
         pool = pool_;
 
         // Allow pool to take dai and fyDai for trading
