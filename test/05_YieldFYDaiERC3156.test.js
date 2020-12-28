@@ -35,7 +35,7 @@ contract('YieldFYDaiERC3156', (accounts) => {
     )
   });
 
-  it('simple flash loan', async function () {
+  it('fyDai flash loan', async function () {
     const loan = new BN("1000")
     const balanceBefore = await fyDai.balanceOf(borrower.address)
     await borrower.flashBorrow(lender.address, fyDai.address, loan, { from: user1 });

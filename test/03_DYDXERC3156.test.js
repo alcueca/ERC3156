@@ -1,10 +1,10 @@
-const { BN, expectRevert } = require('@openzeppelin/test-helpers');
-const { expect } = require('chai');
-
 const SoloMarginMock = artifacts.require('SoloMarginMock');
 const DYDXERC3156 = artifacts.require('DYDXERC3156');
 const ERC20Mock = artifacts.require('ERC20Mock');
 const FlashBorrower = artifacts.require('FlashBorrower');
+
+const { BN, expectRevert } = require('@openzeppelin/test-helpers');
+require('chai').use(require('chai-as-promised')).should()
 
 contract('DYDXERC3156', (accounts) => {
 
@@ -47,10 +47,12 @@ contract('DYDXERC3156', (accounts) => {
   });
 
   it('weth flash loan', async function () {
+    const fee = await lender.flashFee(weth.address, soloBalance)
+
     await borrower.flashBorrow(lender.address, weth.address, soloBalance, { from: user1 });
     expect(await weth.balanceOf(solo.address)).to.be.bignumber.equal(soloBalance.addn(1));
 
-    /* const balanceAfter = await weth.balanceOf(user1)
+    const balanceAfter = await weth.balanceOf(user1)
     balanceAfter.toString().should.equal(new BN('0').toString())
     const flashBalance = await borrower.flashBalance()
     flashBalance.toString().should.equal(soloBalance.add(fee).toString())
@@ -61,14 +63,16 @@ contract('DYDXERC3156', (accounts) => {
     const flashFee = await borrower.flashFee()
     flashFee.toString().should.equal(fee.toString())
     const flashUser = await borrower.flashUser()
-    flashUser.toString().should.equal(borrower.address) */
+    flashUser.toString().should.equal(borrower.address)
   });
 
   it('dai flash loan', async function () {
+    const fee = await lender.flashFee(dai.address, soloBalance)
+
     await borrower.flashBorrow(lender.address, dai.address, soloBalance, { from: user1 });
     expect(await dai.balanceOf(solo.address)).to.be.bignumber.equal(soloBalance.addn(2));
 
-    /* const balanceAfter = await dai.balanceOf(user1)
+    const balanceAfter = await dai.balanceOf(user1)
     balanceAfter.toString().should.equal(new BN('0').toString())
     const flashBalance = await borrower.flashBalance()
     flashBalance.toString().should.equal(soloBalance.add(fee).toString())
@@ -79,6 +83,6 @@ contract('DYDXERC3156', (accounts) => {
     const flashFee = await borrower.flashFee()
     flashFee.toString().should.equal(fee.toString())
     const flashUser = await borrower.flashUser()
-    flashUser.toString().should.equal(borrower.address) */
+    flashUser.toString().should.equal(borrower.address)
   });
 });

@@ -61,7 +61,7 @@ contract('YieldDaiERC3156', async (accounts) => {
     )
   });
 
-  it('should do a simple flash loan', async () => {
+  it('dai flash loan', async () => {
     const ONE = new BN("1000000000000000000")
     const loan = ONE
 

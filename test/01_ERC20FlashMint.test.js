@@ -34,19 +34,22 @@ contract('ERC20FlashMinter', (accounts) => {
   })
 
   it('should do a loan that pays fees', async () => {
+    const loan = new BN('1000')
+    const fee = await lender.flashFee(weth.address, loan)
+  
     await weth.mint(borrower.address, 1, { from: user1 })
-    await borrower.flashBorrow(lender.address, weth.address, 1000, { from: user1 })
+    await borrower.flashBorrow(lender.address, weth.address, loan, { from: user1 })
 
     const balanceAfter = await lender.balanceOf(user1)
-    balanceAfter.toString().should.equal(new BN('0').toString())
+    balanceAfter.toString().should.equal('0')
     const flashBalance = await borrower.flashBalance()
-    flashBalance.toString().should.equal(new BN('1001').toString())
+    flashBalance.toString().should.equal(loan.add(fee).toString())
     const flashToken = await borrower.flashToken()
     flashToken.toString().should.equal(weth.address)
     const flashValue = await borrower.flashValue()
-    flashValue.toString().should.equal(new BN('1000').toString())
+    flashValue.toString().should.equal(loan.toString())
     const flashFee = await borrower.flashFee()
-    flashFee.toString().should.equal(new BN('1').toString())
+    flashFee.toString().should.equal(fee.toString())
     const flashUser = await borrower.flashUser()
     flashUser.toString().should.equal(borrower.address)
   })

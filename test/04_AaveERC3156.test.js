@@ -47,7 +47,8 @@ contract('AaveERC3156', (accounts) => {
   });
 
   it('weth flash loan', async () => {
-    const fee = aaveBalance.muln(9).divn(10000)
+    const fee = await lender.flashFee(weth.address, aaveBalance)
+
     await weth.mint(borrower.address, fee, { from: user1 })
     await borrower.flashBorrow(lender.address, weth.address, aaveBalance, { from: user1 })
 
@@ -57,6 +58,26 @@ contract('AaveERC3156', (accounts) => {
     flashBalance.toString().should.equal(aaveBalance.add(fee).toString())
     const flashToken = await borrower.flashToken()
     flashToken.toString().should.equal(weth.address)
+    const flashValue = await borrower.flashValue()
+    flashValue.toString().should.equal(aaveBalance.toString())
+    const flashFee = await borrower.flashFee()
+    flashFee.toString().should.equal(fee.toString())
+    const flashUser = await borrower.flashUser()
+    flashUser.toString().should.equal(borrower.address)
+  })
+
+  it('dai flash loan', async () => {
+    const fee = await lender.flashFee(dai.address, aaveBalance)
+
+    await dai.mint(borrower.address, fee, { from: user1 })
+    await borrower.flashBorrow(lender.address, dai.address, aaveBalance, { from: user1 })
+
+    const balanceAfter = await dai.balanceOf(user1)
+    balanceAfter.toString().should.equal(new BN('0').toString())
+    const flashBalance = await borrower.flashBalance()
+    flashBalance.toString().should.equal(aaveBalance.add(fee).toString())
+    const flashToken = await borrower.flashToken()
+    flashToken.toString().should.equal(dai.address)
     const flashValue = await borrower.flashValue()
     flashValue.toString().should.equal(aaveBalance.toString())
     const flashFee = await borrower.flashFee()
