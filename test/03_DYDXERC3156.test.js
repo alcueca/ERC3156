@@ -9,17 +9,16 @@ require('chai').use(require('chai-as-promised')).should()
 contract('DYDXERC3156', (accounts) => {
 
   const [ deployer, user1 ] = accounts;
-  let weth, sai, usdc, dai, borrower, solo, lender
+  let weth, dai, usdc, borrower, solo, lender
   const soloBalance = new BN(100000);
 
   beforeEach(async function () {
     weth = await ERC20Mock.new("WETH", "WETH");
-    sai = await ERC20Mock.new("SAI", "SAI");
-    usdc = await ERC20Mock.new("USDC", "USDC");
     dai = await ERC20Mock.new("DAI", "DAI");
+    usdc = await ERC20Mock.new("USDC", "USDC");
     solo = await SoloMarginMock.new(
-      [0, 1, 2, 3],
-      [weth.address, sai.address, usdc.address, dai.address],  
+      [0, 1, 2],
+      [weth.address, dai.address, usdc.address],  
     );
     lender = await DYDXERC3156.new(solo.address);
 
@@ -27,19 +26,19 @@ contract('DYDXERC3156', (accounts) => {
 
     await weth.mint(solo.address, soloBalance.toString());
     await dai.mint(solo.address, soloBalance.toString());
-    await weth.mint(borrower.address, 1);
+    await weth.mint(borrower.address, 2);
     await dai.mint(borrower.address, 2);
   });
 
   it('flash supply', async function () {
     expect(await lender.flashSupply(weth.address)).to.be.bignumber.equal(soloBalance);
-    expect(await lender.flashSupply(sai.address)).to.be.bignumber.equal("0");
+    expect(await lender.flashSupply(usdc.address)).to.be.bignumber.equal("0");
     expect(await lender.flashSupply(lender.address)).to.be.bignumber.equal("0");
   });
 
   it('flash fee', async function () {
-    expect(await lender.flashFee(weth.address, soloBalance)).to.be.bignumber.equal("1");
-    expect(await lender.flashFee(dai.address, soloBalance)).to.be.bignumber.equal("2");
+    expect(await lender.flashFee(weth.address, soloBalance)).to.be.bignumber.equal("2");
+    expect(await lender.flashFee(usdc.address, soloBalance)).to.be.bignumber.equal("2");
     await expectRevert(
       lender.flashFee(lender.address, soloBalance),
       "Unsupported currency"
@@ -50,7 +49,7 @@ contract('DYDXERC3156', (accounts) => {
     const fee = await lender.flashFee(weth.address, soloBalance)
 
     await borrower.flashBorrow(lender.address, weth.address, soloBalance, { from: user1 });
-    expect(await weth.balanceOf(solo.address)).to.be.bignumber.equal(soloBalance.addn(1));
+    expect(await weth.balanceOf(solo.address)).to.be.bignumber.equal(soloBalance.add(fee));
 
     const balanceAfter = await weth.balanceOf(user1)
     balanceAfter.toString().should.equal(new BN('0').toString())
@@ -70,7 +69,7 @@ contract('DYDXERC3156', (accounts) => {
     const fee = await lender.flashFee(dai.address, soloBalance)
 
     await borrower.flashBorrow(lender.address, dai.address, soloBalance, { from: user1 });
-    expect(await dai.balanceOf(solo.address)).to.be.bignumber.equal(soloBalance.addn(2));
+    expect(await dai.balanceOf(solo.address)).to.be.bignumber.equal(soloBalance.add(fee));
 
     const balanceAfter = await dai.balanceOf(user1)
     balanceAfter.toString().should.equal(new BN('0').toString())

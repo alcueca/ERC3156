@@ -69,7 +69,7 @@ contract SoloMarginMock is SoloMarginLike {
     }
 
     function repaymentFee(uint256 marketId) internal returns (uint256) {
-        return marketId < 2 ? 1 : 2;
+        return 2;
     }
 
     function transfer(uint256 marketId, address to, uint256 amount) internal returns (bool) {

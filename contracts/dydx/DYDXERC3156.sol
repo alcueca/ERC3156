@@ -33,17 +33,12 @@ contract DYDXERC3156 is IERC3156FlashLender, DYDXFlashBorrowerLike {
     /// @param soloMargin_ DYDX SoloMargin address
     constructor (SoloMarginLike soloMargin_) {
         soloMargin = soloMargin_;
-        uint256 marketId = 0;
-        while (true) {
+
+        for (uint256 marketId = 0; marketId <= 2; marketId++) {
             address token = soloMargin.getMarketTokenAddress(marketId);
-            if (token != address(0)) {
-                tokenAddressToMarketId[token] = marketId;
-                tokensRegistered[token] = true;
-                IERC20(token).approve(address(soloMargin), uint256(-1));            
-            } else {
-                break;
-            }
-            marketId++;
+            tokenAddressToMarketId[token] = marketId;
+            tokensRegistered[token] = true;
+            IERC20(token).approve(address(soloMargin), uint256(-1));            
         }
     }
 
@@ -64,8 +59,7 @@ contract DYDXERC3156 is IERC3156FlashLender, DYDXFlashBorrowerLike {
      */
     function flashFee(address token, uint256 amount) public view override returns (uint256) {
         require(tokensRegistered[token], "Unsupported currency");
-        // Add 1 wei for markets 0-1 and 2 wei for markets 2-3
-        return tokenAddressToMarketId[token] < 2 ? 1 : 2;
+        return 2;
     }
 
     /**
