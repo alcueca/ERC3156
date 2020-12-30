@@ -30,7 +30,7 @@ contract FlashLender is IERC3156FlashLender {
     }
 
     /**
-     * @dev Loan `amount` tokens to `receiver`, which needs to return them plus a 0.1% fee to this contract within the same transaction.
+     * @dev Loan `amount` tokens to `receiver`, which needs to return them plus a `flashFee` to this contract within the same transaction.
      * @param receiver The contract receiving the tokens, needs to implement the `onFlashLoan(address user, uint256 amount, uint256 fee, bytes calldata)` interface.
      * @param token The loan currency.
      * @param amount The amount of tokens lent.
