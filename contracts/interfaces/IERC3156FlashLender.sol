@@ -2,10 +2,6 @@
 pragma solidity ^0.7.5;
 
 
-interface IERC3156FlashBorrower {
-    function onFlashLoan(address user, address token, uint256 value, uint256 fee, bytes calldata) external;
-}
-
 interface IERC3156FlashLender {
     function flashLoan(address receiver, address token, uint256 value, bytes calldata data) external;
 

@@ -4,7 +4,8 @@ pragma solidity ^0.7.5;
 
 import "./interfaces/IFYDai.sol";
 import "./interfaces/YieldFlashBorrowerLike.sol";
-import { IERC3156FlashBorrower, IERC3156FlashLender } from "../interfaces/IERC3156.sol";
+import "../interfaces/IERC3156FlashBorrower.sol";
+import "../interfaces/IERC3156FlashLender.sol";
 
 
 /**
