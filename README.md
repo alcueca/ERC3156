@@ -37,7 +37,7 @@ The flash loans have been tested with the ERC20 tokens below, but should work fo
 
 
 ### Sample Execution
-Let's say you want to flash loan 10 DAI from dYdX via this wrapper.
+Let's say you want to test a flash loan of 10 DAI from dYdX using `FlashBorrower` and the `dYdXERC3156` wrapper.
 1. Head to the [Flash Borrower contract](https://kovan.etherscan.io/address/0xeeb0c120bF35fB0793b1c7d0D93230e552020398#writeContract)
 2. Connect via Web3 and expand '1. flashBorrow'
 3. Input the following:
