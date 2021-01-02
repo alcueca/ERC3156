@@ -11,7 +11,7 @@ This project also implements ERC-3156 wrappers for the flash loan functionality 
 Alternatively, you can use FlashBorrower to kick the tires. You can give to the `flashBorrow` function the address of an ERC3156 compliant lender (such as any of the wrappers in this repo), the address of a supported ERC20 token (which for wrappers depends on the underlying lender such as Aave) and a loan value. Upon execution a flash loan will happen, which you can examine in etherscan.io or tenderly.co. You will need to have transferred to FlashBorrower enough of the ERC20 being borrowed beforehand to pay for the fees.
 
 
-| Contract      | Address       |
+| Lender Contract      | Lender Address       |
 | ------------- |-------------- |
 | FlashBorrower | 0xeeb0c120bF35fB0793b1c7d0D93230e552020398 |
 | ERC20FlashMinter | 0x1e198e90c7166f7f9fD24b9D7A0451D7AeE78a3F |
@@ -26,29 +26,33 @@ Alternatively, you can use FlashBorrower to kick the tires. You can give to the 
 ### Tested currencies
 The flash loans have been tested with the ERC20 tokens below, but should work for any tokens that the underlying lenders make available.
 
-| Contract      | Address       |
+| Lender Contract      | Currency       |
 | -------------------------- |-------------------- |
-| ERC20FlashMinter (ERC20FlashMinter) | 0x1e198e90c7166f7f9fD24b9D7A0451D7AeE78a3F |
-| WETH9 (FlashLender, AaveERC3156, DYDXERC3156, UniswapERC3156) | 0xd0A1E359811322d97991E03f863a0C30C2cF029C |
-| DAI (FlashLender, YieldDaiERC3156, UniswapERC3156) | 0x4F96Fe3b7A6Cf9725f59d353F723c1bDb64CA6Aa |
-| DAI (DYDXERC3156) | 0xC4375B7De8af5a38a93548eb8453a498222C4fF2 |
-| DAI (AaveERC3156) | 0xFf795577d9AC8bD7D90Ee22b6C1703490b6512FD |
-| FYDAI (YieldFYDaiERC3156) | 0x6B166d6325586c86B44f01509Fc64e649DCfE7C4, 0x42AA68930d4430E2416036966983E6c9Fe8Ff2f8, 0x2b67866649AFcEFC63870E02EdefC318fd8760D3, 0x02B06417A3e3CB391970C6074AbcF2745a60b880, 0x6Abb65246346b2A52Faed338cB18880e70A57Cf8 |
+| ERC20FlashMinter | ERC20FlashMinter - 0x1e198e90c7166f7f9fD24b9D7A0451D7AeE78a3F |
+| FlashLender, AaveERC3156, DYDXERC3156, UniswapERC3156 | WETH9 - 0xd0A1E359811322d97991E03f863a0C30C2cF029C |
+| FlashLender, YieldDaiERC3156, UniswapERC3156 | DAI - 0x4F96Fe3b7A6Cf9725f59d353F723c1bDb64CA6Aa |
+| DYDXERC3156 | DAI - 0xC4375B7De8af5a38a93548eb8453a498222C4fF2 |
+| AaveERC3156 | DAI - 0xFf795577d9AC8bD7D90Ee22b6C1703490b6512FD |
+| YieldFYDaiERC3156 | FYDAI - 0x6B166d6325586c86B44f01509Fc64e649DCfE7C4, 0x42AA68930d4430E2416036966983E6c9Fe8Ff2f8, 0x2b67866649AFcEFC63870E02EdefC318fd8760D3, 0x02B06417A3e3CB391970C6074AbcF2745a60b880, 0x6Abb65246346b2A52Faed338cB18880e70A57Cf8 |
 
 
 ### Sample Execution
-Let's say you want to test a flash loan of 10 DAI from dYdX using `FlashBorrower` and the `dYdXERC3156` wrapper.
+Let's say you want to test a flash loan of 10 DAI from Uniswap using `FlashBorrower` and the `UniswapERC3156` wrapper.
 1. Head to the [Flash Borrower contract](https://kovan.etherscan.io/address/0xeeb0c120bF35fB0793b1c7d0D93230e552020398#writeContract)
 2. Connect via Web3 and expand '1. flashBorrow'
 3. Input the following:
 ```
-  lender: 0xC65151C0777614da245393b4481e29c885Da7C4D
-  token: 0xC4375B7De8af5a38a93548eb8453a498222C4fF2
+  lender: 0xeBe2432d4b8C59F33674F6076ddeE8643B8039d1
+  token: 0x4F96Fe3b7A6Cf9725f59d353F723c1bDb64CA6Aa
   value: 10000000000000000000
 ```
 4. Then click Write to execute.
-5. If all went well it should look [like this](https://kovan.etherscan.io/tx/0x96537d53089cd63e4b732cea796f1f65ed46383a307a2dd4a86c25c63c3893bf).
+5. If all went well it should look [like this](https://kovan.etherscan.io/tx/0x87d4bb5713080eaf5543131893e8a8c496ad7bce78ddd06bdbf9bde9d3eaf1fd).
 
+[Flash Borrower](https://kovan.etherscan.io/address/0xeeb0c120bF35fB0793b1c7d0D93230e552020398#writeContract) needs to have enough of the borrowed token to pay for the flash loan fees.
+1. Check the fee amount with the [flashFee](https://kovan.etherscan.io/address/0xeBe2432d4b8C59F33674F6076ddeE8643B8039d1#readContract) function, the token is DAI (0x4F96Fe3b7A6Cf9725f59d353F723c1bDb64CA6Aa).
+2. Check the DAI balance of flashBorrower (0xeeb0c120bF35fB0793b1c7d0D93230e552020398) [balanceOf](https://kovan.etherscan.io/address/0x4F96Fe3b7A6Cf9725f59d353F723c1bDb64CA6Aa#readContract) function of the DAI contract.
+3. If FlashBorrower doesn't have enough DAI to pay for the loan fees, go to [Uniswap](https://app.uniswap.org/#/swap) and making sure that you are in Kovan, buy some DAI by address (0x4F96Fe3b7A6Cf9725f59d353F723c1bDb64CA6Aa) and send it to the FlashBorrower (0xeeb0c120bF35fB0793b1c7d0D93230e552020398).
 
 ### Things to note
 Flash loan basics still apply under this wrapper i.e.:
