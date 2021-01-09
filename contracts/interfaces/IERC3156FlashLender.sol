@@ -18,5 +18,5 @@ interface IERC3156FlashLender {
      * @param token The loan currency.
      * @return The amount of `token` that can be borrowed.
      */
-    function flashSupply(address token) external view returns (uint256);
+    function maxFlashAmount(address token) external view returns (uint256);
 }

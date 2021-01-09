@@ -27,7 +27,7 @@ contract YieldFYDaiERC3156 is IERC3156FlashLender, YieldFlashBorrowerLike {
      * @param token The loan currency. It must be a FYDai contract.
      * @return The amount of `token` that can be borrowed.
      */
-    function flashSupply(address token) public view override returns (uint256) {
+    function maxFlashAmount(address token) public view override returns (uint256) {
         return fyDaisSupported[token] ? type(uint112).max - IFYDai(token).totalSupply() : 0;
     }
 
@@ -54,10 +54,12 @@ contract YieldFYDaiERC3156 is IERC3156FlashLender, YieldFlashBorrowerLike {
         IFYDai(token).flashMint(amount, data);
     }
 
-    /// @dev FYDai flash loan callback. It sends the value borrowed to `receiver`, and expects that the value plus the fee will be transferred back.
+    /// @dev FYDai flash loan callback. It sends the value borrowed to `receiver`, and takes the value back after the callback.
     function executeOnFlashMint(uint256 amount, bytes memory data) public override {
         (address origin, address receiver, bytes memory userData) = abi.decode(data, (address, address, bytes));
         IFYDai(msg.sender).transfer(receiver, amount);
         IERC3156FlashBorrower(receiver).onFlashLoan(origin, msg.sender, amount, 0, userData); // msg.sender is the lending fyDai contract
+        IFYDai(msg.sender).transferFrom(receiver, address(this), amount);
+        IFYDai(msg.sender).approve(msg.sender, amount);
     }
 }

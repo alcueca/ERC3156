@@ -11,7 +11,7 @@ import "../interfaces/IERC3156FlashLender.sol";
  * @author Alberto Cuesta Cañada
  * @dev Extension of {ERC20} that allows flash minting.
  */
-contract ERC20FlashMinter is ERC20, IERC3156FlashLender {
+contract FlashMinter is ERC20, IERC3156FlashLender {
     using SafeMath for uint256;
 
     uint256 public fee;
@@ -28,7 +28,7 @@ contract ERC20FlashMinter is ERC20, IERC3156FlashLender {
      * @param token The loan currency.
      * @return The amount of `token` that can be borrowed.
      */
-    function flashSupply(address token) external view override returns (uint256) {
+    function maxFlashAmount(address token) external view override returns (uint256) {
         return type(uint256).max;
     }
 
@@ -44,7 +44,7 @@ contract ERC20FlashMinter is ERC20, IERC3156FlashLender {
     }
 
     /**
-     * @dev Loan `amount` tokens to `receiver`, which needs to return them plus `flashFee` to this contract within the same transaction.
+     * @dev Loan `amount` tokens to `receiver`, and takes it back plus a `flashFee` after the ERC3156 callback.
      * @param receiver The contract receiving the tokens, needs to implement the `onFlashLoan(address user, uint256 amount, uint256 fee, bytes calldata)` interface.
      * @param token The loan currency. Must match the address of this contract.
      * @param amount The amount of tokens lent.
@@ -52,10 +52,12 @@ contract ERC20FlashMinter is ERC20, IERC3156FlashLender {
      */
     function flashLoan(address receiver, address token, uint256 amount, bytes calldata data) external override {
         require(token == address(this), "FlashMinter: unsupported loan currency");
-        uint256 _fee = _flashFee(token, amount);
+        uint256 fee = _flashFee(token, amount);
         _mint(receiver, amount);
-        IERC3156FlashBorrower(receiver).onFlashLoan(msg.sender, token, amount, _fee, data);
-        _burn(address(this), amount.add(_fee));
+        IERC3156FlashBorrower(receiver).onFlashLoan(msg.sender, token, amount, fee, data);
+        uint256 _allowance = allowance(receiver, address(this));
+        _approve(receiver, address(this), _allowance.sub(amount.add(fee), "FlashMinter: Flash loan repayment not approved"));
+        _burn(receiver, amount.add(fee));
     }
 
     /**

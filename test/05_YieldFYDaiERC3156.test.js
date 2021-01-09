@@ -22,8 +22,8 @@ contract('YieldFYDaiERC3156', (accounts) => {
   });
 
   it('flash supply', async function () {
-    expect(await lender.flashSupply(fyDai.address)).to.be.bignumber.equal(MAX_UINT112);
-    expect(await lender.flashSupply(lender.address)).to.be.bignumber.equal("0");
+    expect(await lender.maxFlashAmount(fyDai.address)).to.be.bignumber.equal(MAX_UINT112);
+    expect(await lender.maxFlashAmount(lender.address)).to.be.bignumber.equal("0");
   });
 
   it('flash fee', async function () {
@@ -40,9 +40,9 @@ contract('YieldFYDaiERC3156', (accounts) => {
     const balanceBefore = await fyDai.balanceOf(borrower.address)
     await borrower.flashBorrow(lender.address, fyDai.address, loan, { from: user1 });
 
-    assert.equal(await borrower.flashUser(), borrower.address)
+    assert.equal(await borrower.flashSender(), borrower.address)
     assert.equal((await borrower.flashToken()).toString(), fyDai.address.toString())
-    assert.equal((await borrower.flashValue()).toString(), loan.toString())
+    assert.equal((await borrower.flashAmount()).toString(), loan.toString())
     assert.equal((await borrower.flashBalance()).toString(), balanceBefore.add(loan).toString())
     assert.equal((await borrower.flashFee()).toString(), "0")
     assert.equal((await fyDai.balanceOf(borrower.address)).toString(), balanceBefore.toString())

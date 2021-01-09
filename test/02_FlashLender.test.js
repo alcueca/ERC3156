@@ -32,10 +32,10 @@ contract('FlashLender', (accounts) => {
     flashBalance.toString().should.equal(new BN('1').toString())
     let flashToken = await borrower.flashToken()
     flashToken.toString().should.equal(weth.address)
-    let flashValue = await borrower.flashValue()
-    flashValue.toString().should.equal(new BN('1').toString())
-    let flashUser = await borrower.flashUser()
-    flashUser.toString().should.equal(borrower.address)
+    let flashAmount = await borrower.flashAmount()
+    flashAmount.toString().should.equal(new BN('1').toString())
+    let flashSender = await borrower.flashSender()
+    flashSender.toString().should.equal(borrower.address)
 
     await borrower.flashBorrow(lender.address, dai.address, 3, { from: user1 })
 
@@ -45,10 +45,10 @@ contract('FlashLender', (accounts) => {
     flashBalance.toString().should.equal(new BN('3').toString())
     flashToken = await borrower.flashToken()
     flashToken.toString().should.equal(dai.address)
-    flashValue = await borrower.flashValue()
-    flashValue.toString().should.equal(new BN('3').toString())
-    flashUser = await borrower.flashUser()
-    flashUser.toString().should.equal(borrower.address)
+    flashAmount = await borrower.flashAmount()
+    flashAmount.toString().should.equal(new BN('3').toString())
+    flashSender = await borrower.flashSender()
+    flashSender.toString().should.equal(borrower.address)
   })
 
   it('should do a loan that pays fees', async () => {
@@ -64,12 +64,12 @@ contract('FlashLender', (accounts) => {
     flashBalance.toString().should.equal(loan.add(fee).toString())
     const flashToken = await borrower.flashToken()
     flashToken.toString().should.equal(weth.address)
-    const flashValue = await borrower.flashValue()
-    flashValue.toString().should.equal(loan.toString())
+    const flashAmount = await borrower.flashAmount()
+    flashAmount.toString().should.equal(loan.toString())
     const flashFee = await borrower.flashFee()
     flashFee.toString().should.equal(fee.toString())
-    const flashUser = await borrower.flashUser()
-    flashUser.toString().should.equal(borrower.address)
+    const flashSender = await borrower.flashSender()
+    flashSender.toString().should.equal(borrower.address)
   })
 
   it('lenders can choose to charge no fees', async () => {
@@ -85,33 +85,18 @@ contract('FlashLender', (accounts) => {
     flashBalance.toString().should.equal(loan.toString())
     const flashToken = await borrower.flashToken()
     flashToken.toString().should.equal(weth.address)
-    const flashValue = await borrower.flashValue()
-    flashValue.toString().should.equal(loan.toString())
+    const flashAmount = await borrower.flashAmount()
+    flashAmount.toString().should.equal(loan.toString())
     const flashFee = await borrower.flashFee()
     flashFee.toString().should.equal('0')
-    const flashUser = await borrower.flashUser()
-    flashUser.toString().should.equal(borrower.address)
-  })
-
-  it('should do a simple flash loan from an EOA', async () => {
-    await lender.flashLoan(borrower.address, weth.address, 1, '0x0000000000000000000000000000000000000000000000000000000000000000', { from: user1 })
-
-    const balanceAfter = await weth.balanceOf(user1)
-    balanceAfter.toString().should.equal(new BN('0').toString())
-    const flashBalance = await borrower.flashBalance()
-    flashBalance.toString().should.equal(new BN('1').toString())
-    const flashToken = await borrower.flashToken()
-    flashToken.toString().should.equal(weth.address)
-    const flashValue = await borrower.flashValue()
-    flashValue.toString().should.equal(new BN('1').toString())
-    const flashUser = await borrower.flashUser()
-    flashUser.toString().should.equal(user1)
+    const flashSender = await borrower.flashSender()
+    flashSender.toString().should.equal(borrower.address)
   })
 
   it('needs to return funds after a flash loan', async () => {
     await expectRevert(
       borrower.flashBorrowAndSteal(lender.address, weth.address, 1),
-      'FlashLender: unpaid loan'
+      'ERC20: transfer amount exceeds allowance'
     )
   })
 

@@ -38,7 +38,6 @@ contract DYDXERC3156 is IERC3156FlashLender, DYDXFlashBorrowerLike {
             address token = soloMargin.getMarketTokenAddress(marketId);
             tokenAddressToMarketId[token] = marketId;
             tokensRegistered[token] = true;
-            IERC20(token).approve(address(soloMargin), uint256(-1));            
         }
     }
 
@@ -47,7 +46,7 @@ contract DYDXERC3156 is IERC3156FlashLender, DYDXFlashBorrowerLike {
      * @param token The loan currency.
      * @return The amount of `token` that can be borrowed.
      */
-    function flashSupply(address token) external view override returns (uint256) {
+    function maxFlashAmount(address token) external view override returns (uint256) {
         return tokensRegistered[token] == true ? IERC20(token).balanceOf(address(soloMargin)) : 0;
     }
 
@@ -80,7 +79,7 @@ contract DYDXERC3156 is IERC3156FlashLender, DYDXFlashBorrowerLike {
         soloMargin.operate(accountInfos, operations);
     }
 
-    /// @dev DYDX flash loan callback. It sends the value borrowed to `receiver`, and expects that the value plus the fee will be transferred back.
+    /// @dev DYDX flash loan callback. It sends the value borrowed to `receiver`, and takes it back plus a `flashFee` after the ERC3156 callback.
     function callFunction(
         address sender,
         DYDXDataTypes.AccountInfo memory,
@@ -94,10 +93,15 @@ contract DYDXERC3156 is IERC3156FlashLender, DYDXFlashBorrowerLike {
         (address origin, address receiver, address token, uint256 amount, bytes memory userData) = 
             abi.decode(data, (address, address, address, uint256, bytes));
 
+        uint256 fee = flashFee(token, amount);
+
         // Transfer to `receiver`
         require(IERC20(token).transfer(receiver, amount), "Transfer failed");
+        IERC3156FlashBorrower(receiver).onFlashLoan(origin, token, amount, fee, userData);
+        require(IERC20(token).transferFrom(receiver, address(this), amount.add(fee)), "Transfer failed");
 
-        IERC3156FlashBorrower(receiver).onFlashLoan(origin, token, amount, flashFee(token, amount), userData);
+        // Approve the SoloMargin contract allowance to *pull* the owed amount
+        IERC20(token).approve(address(soloMargin), amount.add(fee));            
     }
 
     function getAccountInfo() internal view returns (DYDXDataTypes.AccountInfo memory) {

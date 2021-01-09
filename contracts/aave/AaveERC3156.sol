@@ -32,7 +32,7 @@ contract AaveERC3156 is IERC3156FlashLender, AaveFlashBorrowerLike {
      * @param token The loan currency.
      * @return The amount of `token` that can be borrowed.
      */
-    function flashSupply(address token) external view override returns (uint256) {
+    function maxFlashAmount(address token) external view override returns (uint256) {
         AaveDataTypes.ReserveData memory reserveData = lendingPool.getReserveData(token);
         return reserveData.aTokenAddress != address(0) ? IERC20(token).balanceOf(reserveData.aTokenAddress) : 0;
     }
@@ -57,8 +57,6 @@ contract AaveERC3156 is IERC3156FlashLender, AaveFlashBorrowerLike {
      * @param userData A data parameter to be passed on to the `receiver` for any custom use.
      */
     function flashLoan(address receiver, address token, uint256 amount, bytes calldata userData) external override {
-        address receiverAddress = address(this);
-
         address[] memory tokens = new address[](1);
         tokens[0] = address(token);
 
@@ -74,7 +72,7 @@ contract AaveERC3156 is IERC3156FlashLender, AaveFlashBorrowerLike {
         uint16 referralCode = 0;
 
         lendingPool.flashLoan(
-            receiverAddress,
+            address(this),
             tokens,
             amounts,
             modes,
@@ -84,7 +82,7 @@ contract AaveERC3156 is IERC3156FlashLender, AaveFlashBorrowerLike {
         );
     }
 
-    /// @dev Aave flash loan callback. It sends the amount borrowed to `receiver`, and expects that the amount plus the fee will be transferred back.
+    /// @dev Aave flash loan callback. It sends the amount borrowed to `receiver`, and takes it back plus a `flashFee` after the ERC3156 callback.
     function executeOperation(
         address[] calldata tokens,
         uint256[] calldata amounts,
@@ -99,12 +97,17 @@ contract AaveERC3156 is IERC3156FlashLender, AaveFlashBorrowerLike {
 
         (address origin, address receiver, bytes memory userData) = abi.decode(data, (address, address, bytes));
 
+        address token = tokens[0];
+        uint256 amount = amounts[0];
+        uint256 fee = fees[0];
+
         // Send the tokens to the original receiver using the ERC-3156 interface
-        IERC20(tokens[0]).transfer(origin, amounts[0]);
-        IERC3156FlashBorrower(receiver).onFlashLoan(origin, tokens[0], amounts[0], fees[0], userData);
+        IERC20(token).transfer(origin, amount);
+        IERC3156FlashBorrower(receiver).onFlashLoan(origin, token, amount, fee, userData);
+        IERC20(token).transferFrom(origin, address(this), amount.add(fee));
 
         // Approve the LendingPool contract allowance to *pull* the owed amount
-        IERC20(tokens[0]).approve(address(lendingPool), amounts[0].add(fees[0]));
+        IERC20(token).approve(address(lendingPool), amount.add(fee));
 
         return true;
     }
