@@ -8,7 +8,9 @@ This project also implements ERC-3156 wrappers for the flash loan functionality 
 
 ## Kovan
 
-Alternatively, you can use FlashBorrower to kick the tires. You can give to the `flashBorrow` function the address of an ERC3156 compliant lender (such as any of the wrappers in this repo), the address of a supported ERC20 token (which for wrappers depends on the underlying lender such as Aave) and a loan value. Upon execution a flash loan will happen, which you can examine in etherscan.io or tenderly.co. You will need to have transferred to FlashBorrower enough of the ERC20 being borrowed beforehand to pay for the fees.
+In all real use cases, you will have to create your own contract to take flashLoans, calling the `flashLoan` function on an ERC3156 compliant lender (or one of the wrappers in this repo), and implementing the `onFlashLoan` callback.
+
+However, you can use FlashBorrower to kick the tires. You can give to the `flashBorrow` function the address of an ERC3156 compliant lender (such as any of the wrappers in this repo), the address of a supported ERC20 token (which for wrappers depends on the underlying lender such as Aave) and a loan value. Upon execution a flash loan will happen, which you can examine in etherscan.io or tenderly.co. You will need to have transferred to FlashBorrower enough of the ERC20 being borrowed beforehand to pay for the fees.
 
 
 | Lender Contract      | Lender Address       |
