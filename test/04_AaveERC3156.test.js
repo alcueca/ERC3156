@@ -32,9 +32,9 @@ contract('AaveERC3156', (accounts) => {
   })
 
   it('flash supply', async function () {
-    expect(await lender.flashSupply(weth.address)).to.be.bignumber.equal(aaveBalance);
-    expect(await lender.flashSupply(dai.address)).to.be.bignumber.equal(aaveBalance);
-    expect(await lender.flashSupply(lender.address)).to.be.bignumber.equal("0");
+    expect(await lender.maxFlashAmount(weth.address)).to.be.bignumber.equal(aaveBalance);
+    expect(await lender.maxFlashAmount(dai.address)).to.be.bignumber.equal(aaveBalance);
+    expect(await lender.maxFlashAmount(lender.address)).to.be.bignumber.equal("0");
   });
 
   it('flash fee', async function () {
@@ -58,12 +58,12 @@ contract('AaveERC3156', (accounts) => {
     flashBalance.toString().should.equal(aaveBalance.add(fee).toString())
     const flashToken = await borrower.flashToken()
     flashToken.toString().should.equal(weth.address)
-    const flashValue = await borrower.flashValue()
-    flashValue.toString().should.equal(aaveBalance.toString())
+    const flashAmount = await borrower.flashAmount()
+    flashAmount.toString().should.equal(aaveBalance.toString())
     const flashFee = await borrower.flashFee()
     flashFee.toString().should.equal(fee.toString())
-    const flashUser = await borrower.flashUser()
-    flashUser.toString().should.equal(borrower.address)
+    const flashSender = await borrower.flashSender()
+    flashSender.toString().should.equal(borrower.address)
   })
 
   it('dai flash loan', async () => {
@@ -78,11 +78,11 @@ contract('AaveERC3156', (accounts) => {
     flashBalance.toString().should.equal(aaveBalance.add(fee).toString())
     const flashToken = await borrower.flashToken()
     flashToken.toString().should.equal(dai.address)
-    const flashValue = await borrower.flashValue()
-    flashValue.toString().should.equal(aaveBalance.toString())
+    const flashAmount = await borrower.flashAmount()
+    flashAmount.toString().should.equal(aaveBalance.toString())
     const flashFee = await borrower.flashFee()
     flashFee.toString().should.equal(fee.toString())
-    const flashUser = await borrower.flashUser()
-    flashUser.toString().should.equal(borrower.address)
+    const flashSender = await borrower.flashSender()
+    flashSender.toString().should.equal(borrower.address)
   })
 })

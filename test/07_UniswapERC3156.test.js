@@ -44,9 +44,9 @@ contract('UniswapERC3156', (accounts) => {
   })
 
   it('flash supply', async function () {
-    expect(await lender.flashSupply(weth.address)).to.be.bignumber.equal(reserves.subn(1));
-    expect(await lender.flashSupply(dai.address)).to.be.bignumber.equal(reserves.subn(1));
-    expect(await lender.flashSupply(lender.address)).to.be.bignumber.equal("0");
+    expect(await lender.maxFlashAmount(weth.address)).to.be.bignumber.equal(reserves.subn(1));
+    expect(await lender.maxFlashAmount(dai.address)).to.be.bignumber.equal(reserves.subn(1));
+    expect(await lender.maxFlashAmount(lender.address)).to.be.bignumber.equal("0");
   });
 
   it('flash fee', async function () {
@@ -59,7 +59,7 @@ contract('UniswapERC3156', (accounts) => {
   });
 
   it('weth flash loan', async () => {
-    const loan = await lender.flashSupply(weth.address)
+    const loan = await lender.maxFlashAmount(weth.address)
     const fee = await lender.flashFee(weth.address, loan)
     await weth.mint(borrower.address, fee, { from: user1 })
     await borrower.flashBorrow(lender.address, weth.address, loan, { from: user1 })
@@ -68,16 +68,16 @@ contract('UniswapERC3156', (accounts) => {
     balanceAfter.toString().should.equal(new BN('0').toString())
     const flashBalance = await borrower.flashBalance()
     flashBalance.toString().should.equal(loan.add(fee).toString())
-    const flashValue = await borrower.flashValue()
-    flashValue.toString().should.equal(loan.toString())
+    const flashAmount = await borrower.flashAmount()
+    flashAmount.toString().should.equal(loan.toString())
     const flashFee = await borrower.flashFee()
     flashFee.toString().should.equal(fee.toString())
-    const flashUser = await borrower.flashUser()
-    flashUser.toString().should.equal(borrower.address)
+    const flashSender = await borrower.flashSender()
+    flashSender.toString().should.equal(borrower.address)
   })
 
   it('dai flash loan', async () => {
-    const loan = await lender.flashSupply(dai.address)
+    const loan = await lender.maxFlashAmount(dai.address)
     const fee = await lender.flashFee(dai.address, loan)
     await dai.mint(borrower.address, fee, { from: user1 })
     await borrower.flashBorrow(lender.address, dai.address, loan, { from: user1 })
@@ -86,11 +86,11 @@ contract('UniswapERC3156', (accounts) => {
     balanceAfter.toString().should.equal(new BN('0').toString())
     const flashBalance = await borrower.flashBalance()
     flashBalance.toString().should.equal(loan.add(fee).toString())
-    const flashValue = await borrower.flashValue()
-    flashValue.toString().should.equal(loan.toString())
+    const flashAmount = await borrower.flashAmount()
+    flashAmount.toString().should.equal(loan.toString())
     const flashFee = await borrower.flashFee()
     flashFee.toString().should.equal(fee.toString())
-    const flashUser = await borrower.flashUser()
-    flashUser.toString().should.equal(borrower.address)
+    const flashSender = await borrower.flashSender()
+    flashSender.toString().should.equal(borrower.address)
   })
 })

@@ -1,6 +1,6 @@
 {
   "name": "erc20flash",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Solidity contracts implementing flash lending",
   "author": "Alberto Cuesta Cañada",
   "engines": {
@@ -10,7 +10,7 @@
   },
   "files": [
     "/contracts/FlashLender.sol",
-    "/contracts/ERC20FlashMinter.sol",
+    "/contracts/FlashMinter.sol",
     "/interfaces/IERC3516FlashBorrower.sol",
     "/interfaces/IERC3516FlashLender.sol"
   ],

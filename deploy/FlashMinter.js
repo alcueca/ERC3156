@@ -7,7 +7,7 @@ const func = async function ({ deployments, getNamedAccounts, getChainId }) {
     console.log('Local deployments not implemented')
     return
   } else {
-    const lender = await deploy('ERC20FlashMinter', {
+    const lender = await deploy('FlashMinter', {
       from: deployer,
       deterministicDeployment: true,
       args: [
@@ -16,9 +16,9 @@ const func = async function ({ deployments, getNamedAccounts, getChainId }) {
         "115792089237316195423570985008687907853269984665640564039457584007913129639935",
       ],
     })
-    console.log(`Deployed ERC20FlashMinter to ${lender.address}`);
+    console.log(`Deployed FlashMinter to ${lender.address}`);
   }
 };
 
 module.exports = func;
-module.exports.tags = ["ERC20FlashMinter"];
+module.exports.tags = ["FlashMinter"];

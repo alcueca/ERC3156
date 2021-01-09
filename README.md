@@ -14,7 +14,7 @@ Alternatively, you can use FlashBorrower to kick the tires. You can give to the 
 | Lender Contract      | Lender Address       |
 | ------------- |-------------- |
 | FlashBorrower | 0xeeb0c120bF35fB0793b1c7d0D93230e552020398 |
-| ERC20FlashMinter | 0x1e198e90c7166f7f9fD24b9D7A0451D7AeE78a3F |
+| FlashMinter | 0x1e198e90c7166f7f9fD24b9D7A0451D7AeE78a3F |
 | FlashLender | 0xC79bF13a7199867E6349287e90Ed76D645399705 |
 | AaveERC3156 | 0xC355Fb535757B069D84B3bB01c27240DF973FBa2 |
 | DYDXERC3156 | 0xbb93390573F60d47F0bbbC91754df7f6821D277f |
@@ -28,7 +28,7 @@ The flash loans have been tested with the ERC20 tokens below, but should work fo
 
 | Lender Contract      | Currency       |
 | -------------------------- |-------------------- |
-| ERC20FlashMinter | ERC20FlashMinter - 0x1e198e90c7166f7f9fD24b9D7A0451D7AeE78a3F |
+| FlashMinter | FlashMinter - 0x1e198e90c7166f7f9fD24b9D7A0451D7AeE78a3F |
 | FlashLender, AaveERC3156, DYDXERC3156, UniswapERC3156 | WETH9 - 0xd0A1E359811322d97991E03f863a0C30C2cF029C |
 | FlashLender, YieldDaiERC3156, UniswapERC3156 | DAI - 0x4F96Fe3b7A6Cf9725f59d353F723c1bDb64CA6Aa |
 | DYDXERC3156 | DAI - 0xC4375B7De8af5a38a93548eb8453a498222C4fF2 |

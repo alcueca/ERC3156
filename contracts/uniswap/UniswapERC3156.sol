@@ -3,6 +3,7 @@
 
 pragma solidity 0.7.5;
 
+import "@openzeppelin/contracts/math/SafeMath.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "../interfaces/IERC3156FlashBorrower.sol";
 import "../interfaces/IERC3156FlashLender.sol";
@@ -12,6 +13,8 @@ import "./interfaces/UniswapV2FlashBorrowerLike.sol";
 
 
 contract UniswapERC3156 is IERC3156FlashLender, UniswapV2FlashBorrowerLike {
+    using SafeMath for uint256;
+
     // CONSTANTS
     UniswapV2FactoryLike public factory;
 
@@ -47,7 +50,7 @@ contract UniswapERC3156 is IERC3156FlashLender, UniswapV2FlashBorrowerLike {
      * @param token The loan currency.
      * @return The amount of `token` that can be borrowed.
      */
-    function flashSupply(address token) external view override returns (uint256) {
+    function maxFlashAmount(address token) external view override returns (uint256) {
         address pairAddress = getPairAddress(token);
         if (pairAddress != address(0)) {
             uint256 balance = IERC20(token).balanceOf(pairAddress);
@@ -95,7 +98,7 @@ contract UniswapERC3156 is IERC3156FlashLender, UniswapV2FlashBorrowerLike {
         pair.swap(amount0Out, amount1Out, address(this), data);
     }
 
-    /// @dev Uniswap flash loan callback. It sends the value borrowed to `receiver`, and expects that the value plus the fee will be transferred back.
+    /// @dev Uniswap flash loan callback. It sends the value borrowed to `receiver`, and takes it back plus a `flashFee` after the ERC3156 callback.
     function uniswapV2Call(address sender, uint amount0, uint amount1, bytes calldata data) external override {
         // access control
         require(msg.sender == permissionedPairAddress, "only permissioned UniswapV2 pair can call");
@@ -111,15 +114,16 @@ contract UniswapERC3156 is IERC3156FlashLender, UniswapV2FlashBorrowerLike {
             bytes memory userData
         ) = abi.decode(data, (address, address, address, bytes));
 
-        // compute amount of tokens that need to be paid back
-        uint fee = ((amount * 3) / 997) + 1;
-        uint amountToRepay = amount + fee;
+        uint256 fee = flashFee(token, amount);
         
         // send the borrowed amount to the receiver
         IERC20(token).transfer(receiver, amount);
         // do whatever the user wants
         IERC3156FlashBorrower(receiver).onFlashLoan(origin, token, amount, fee, userData);
-
-        IERC20(token).transfer(msg.sender, amountToRepay);
+        // retrieve the borrowed amount plus fee from the receiver
+        IERC20(token).transferFrom(receiver, address(this), amount.add(fee));
+        
+        // send the borrowed amount plus fee to the uniswap pair
+        IERC20(token).transfer(msg.sender, amount.add(fee));
     }
 }

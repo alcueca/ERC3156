@@ -30,7 +30,7 @@ contract FlashLender is IERC3156FlashLender {
     }
 
     /**
-     * @dev Loan `amount` tokens to `receiver`, which needs to return them plus a `flashFee` to this contract within the same transaction.
+     * @dev Loan `amount` tokens to `receiver`, and takes it back plus a `flashFee` after the callback.
      * @param receiver The contract receiving the tokens, needs to implement the `onFlashLoan(address user, uint256 amount, uint256 fee, bytes calldata)` interface.
      * @param token The loan currency.
      * @param amount The amount of tokens lent.
@@ -38,12 +38,10 @@ contract FlashLender is IERC3156FlashLender {
      */
     function flashLoan(address receiver, address token, uint256 amount, bytes calldata data) external override {
         require(supportedTokens[token], "FlashLender: Unsupported currency");
-        IERC20 currency = IERC20(token);
-        uint256 _fee = _flashFee(token, amount);
-        uint256 balanceTarget = currency.balanceOf(address(this)).add(_fee);
-        currency.transfer(receiver, amount);
-        IERC3156FlashBorrower(receiver).onFlashLoan(msg.sender, token, amount, _fee, data);
-        require(currency.balanceOf(address(this)) >= balanceTarget, "FlashLender: unpaid loan");
+        uint256 fee = _flashFee(token, amount);
+        IERC20(token).transfer(receiver, amount);
+        IERC3156FlashBorrower(receiver).onFlashLoan(msg.sender, token, amount, fee, data);
+        IERC20(token).transferFrom(receiver, address(this), amount.add(fee));
     }
 
     /**
@@ -72,7 +70,7 @@ contract FlashLender is IERC3156FlashLender {
      * @param token The loan currency.
      * @return The amount of `token` that can be borrowed.
      */
-    function flashSupply(address token) external view override returns (uint256) {
+    function maxFlashAmount(address token) external view override returns (uint256) {
         return supportedTokens[token] ? IERC20(token).balanceOf(address(this)) : 0;
     }
 }

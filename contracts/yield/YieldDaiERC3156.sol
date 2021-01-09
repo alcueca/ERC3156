@@ -37,7 +37,7 @@ contract YieldDaiERC3156 is IERC3156FlashLender, YieldFlashBorrowerLike {
      * @param token The loan currency. It must be Dai.
      * @return The amount of `token` that can be borrowed.
      */
-    function flashSupply(address token) public view override returns (uint256) {
+    function maxFlashAmount(address token) public view override returns (uint256) {
         return token == address(pool.dai()) ? pool.getDaiReserves() : 0;
     }
 
@@ -88,8 +88,7 @@ contract YieldDaiERC3156 is IERC3156FlashLender, YieldFlashBorrowerLike {
 
         uint256 fee = uint256(pool.buyFYDaiPreview(fyDaiAmount.toUint128())).sub(amount);
         IERC3156FlashBorrower(receiver).onFlashLoan(origin, address(pool.dai()), amount, fee, userData);
-        // Before the end of the transaction, `receiver` must `transfer` the `loanAmount` plus the `fee`
-        // to this contract so that the conversions that repay the loan are done.
+        pool.dai().transferFrom(receiver, address(this), amount.add(fee));
         pool.sellDai(address(this), address(this), amount.add(fee).toUint128());
     }
 }
