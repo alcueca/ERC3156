@@ -6,6 +6,14 @@ This project also implements ERC-3156 wrappers for the flash loan functionality 
 
 # Contracts deployed
 
+## Mainnet
+
+So far, only the dYdX wrapper has been deployed, to allow for a degree of testing in mainnet. Please raise an issue if you would like to test any of the other wrappers. All wrappers will be deployed in mainnet no later than the date in which ERC3156 progresses to a Final state.
+
+| Lender Contract      | Lender Address       |
+| ------------- |-------------- |
+| DYDXERC3156 | 0x9ADf4155D44053e1f8009d4550F2A7Cd456A817D |
+
 ## Kovan
 
 In all real use cases, you will have to create your own contract to take flashLoans, calling the `flashLoan` function on an ERC3156 compliant lender (or one of the wrappers in this repo), and implementing the `onFlashLoan` callback.
