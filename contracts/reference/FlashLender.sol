@@ -1,8 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-pragma solidity ^0.7.5;
+pragma solidity ^0.8.0;
 
-import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import "@openzeppelin/contracts/math/SafeMath.sol";
+import "../interfaces/IERC20.sol";
 import "../interfaces/IERC3156FlashBorrower.sol";
 import "../interfaces/IERC3156FlashLender.sol";
 
@@ -12,7 +11,6 @@ import "../interfaces/IERC3156FlashLender.sol";
  * @dev Extension of {ERC20} that allows flash lending.
  */
 contract FlashLender is IERC3156FlashLender {
-    using SafeMath for uint256;
 
     mapping(address => bool) public supportedTokens;
     uint256 public fee;
@@ -41,7 +39,7 @@ contract FlashLender is IERC3156FlashLender {
         uint256 fee = _flashFee(token, amount);
         IERC20(token).transfer(receiver, amount);
         IERC3156FlashBorrower(receiver).onFlashLoan(msg.sender, token, amount, fee, data);
-        IERC20(token).transferFrom(receiver, address(this), amount.add(fee));
+        IERC20(token).transferFrom(receiver, address(this), amount + fee);
     }
 
     /**
@@ -62,7 +60,7 @@ contract FlashLender is IERC3156FlashLender {
      * @return The amount of `token` to be charged for the loan, on top of the returned principal.
      */
     function _flashFee(address token, uint256 amount) internal view returns (uint256) {
-        return fee == type(uint256).max ? 0 : amount.div(fee);
+        return fee == type(uint256).max ? 0 : amount / fee;
     }
 
     /**

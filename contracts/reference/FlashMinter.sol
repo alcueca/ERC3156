@@ -1,8 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-pragma solidity ^0.7.5;
+pragma solidity ^0.8.0;
 
-import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
-import "@openzeppelin/contracts/math/SafeMath.sol";
+import "../ERC20.sol";
 import "../interfaces/IERC3156FlashBorrower.sol";
 import "../interfaces/IERC3156FlashLender.sol";
 
@@ -12,7 +11,6 @@ import "../interfaces/IERC3156FlashLender.sol";
  * @dev Extension of {ERC20} that allows flash minting.
  */
 contract FlashMinter is ERC20, IERC3156FlashLender {
-    using SafeMath for uint256;
 
     uint256 public fee;
 
@@ -55,9 +53,10 @@ contract FlashMinter is ERC20, IERC3156FlashLender {
         uint256 fee = _flashFee(token, amount);
         _mint(receiver, amount);
         IERC3156FlashBorrower(receiver).onFlashLoan(msg.sender, token, amount, fee, data);
-        uint256 _allowance = allowance(receiver, address(this));
-        _approve(receiver, address(this), _allowance.sub(amount.add(fee), "FlashMinter: Flash loan repayment not approved"));
-        _burn(receiver, amount.add(fee));
+        uint256 _allowance = allowance[receiver][address(this)];
+        require(_allowance >= (amount + fee), "FlashMinter: Flash loan repayment not approved");
+        _approve(receiver, address(this), _allowance - (amount + fee));
+        _burn(receiver, amount + fee);
     }
 
     /**
@@ -67,6 +66,6 @@ contract FlashMinter is ERC20, IERC3156FlashLender {
      * @return The amount of `token` to be charged for the loan, on top of the returned principal.
      */
     function _flashFee(address token, uint256 amount) internal view returns (uint256) {
-        return fee == type(uint256).max ? 0 : amount.div(fee);
+        return fee == type(uint256).max ? 0 : amount / fee;
     }
 }

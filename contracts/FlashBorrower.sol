@@ -1,14 +1,12 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-pragma solidity 0.7.5;
+pragma solidity ^0.8.0;
 
-import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import "@openzeppelin/contracts/math/SafeMath.sol";
+import "./interfaces/IERC20.sol";
 import "./interfaces/IERC3156FlashBorrower.sol";
 import "./interfaces/IERC3156FlashLender.sol";
 
 
 contract FlashBorrower is IERC3156FlashBorrower {
-    using SafeMath for uint256;
     enum Action {NORMAL, STEAL, REENTER}
 
     uint256 public flashBalance;
@@ -57,7 +55,7 @@ contract FlashBorrower is IERC3156FlashBorrower {
     function approveRepayment(address lender, address token, uint256 amount) public {
         uint256 _allowance = IERC20(token).allowance(address(this), lender);
         uint256 _fee = IERC3156FlashLender(lender).flashFee(token, amount);
-        uint256 _repayment = amount.add(_fee);
-        IERC20(token).approve(lender, _allowance.add(_repayment));
+        uint256 _repayment = amount + _fee;
+        IERC20(token).approve(lender, _allowance + _repayment);
     }
 }
