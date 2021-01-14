@@ -5,7 +5,6 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/math/SafeMath.sol";
 import "./interfaces/IERC3156FlashBorrower.sol";
 import "./interfaces/IERC3156FlashLender.sol";
-import "@nomiclabs/buidler/console.sol";
 
 
 contract FlashBorrower is IERC3156FlashBorrower {

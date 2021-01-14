@@ -10,7 +10,6 @@ import "../interfaces/IERC3156FlashLender.sol";
 import "./interfaces/SoloMarginLike.sol";
 import "./interfaces/DYDXFlashBorrowerLike.sol";
 import "./libraries/DYDXDataTypes.sol";
-import "@nomiclabs/buidler/console.sol";
 
 
 contract DYDXERC3156 is IERC3156FlashLender, DYDXFlashBorrowerLike {
