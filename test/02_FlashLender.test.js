@@ -1,5 +1,5 @@
 const FlashLender = artifacts.require('FlashLender')
-const ERC20Currency = artifacts.require('ERC20Mock')
+const ERC20Mock = artifacts.require('ERC20Mock')
 const FlashBorrower = artifacts.require('FlashBorrower')
 
 const { BN, expectRevert } = require('@openzeppelin/test-helpers')
@@ -14,17 +14,17 @@ contract('FlashLender', (accounts) => {
   let borrower
 
   beforeEach(async () => {
-    weth = await ERC20Currency.new("WETH", "WETH")
-    dai = await ERC20Currency.new("DAI", "DAI")
+    weth = await ERC20Mock.new("WETH", "WETH")
+    dai = await ERC20Mock.new("DAI", "DAI")
     lender = await FlashLender.new([weth.address, dai.address], 10)
-    borrower = await FlashBorrower.new()
+    borrower = await FlashBorrower.new(lender.address)
 
     await weth.mint(lender.address, 1000)
     await dai.mint(lender.address, 999)
   })
 
   it('should do a simple flash loan', async () => {
-    await borrower.flashBorrow(lender.address, weth.address, 1, { from: user1 })
+    await borrower.flashBorrow(weth.address, 1, { from: user1 })
 
     let balanceAfter = await weth.balanceOf(user1)
     balanceAfter.toString().should.equal(new BN('0').toString())
@@ -37,7 +37,7 @@ contract('FlashLender', (accounts) => {
     let flashSender = await borrower.flashSender()
     flashSender.toString().should.equal(borrower.address)
 
-    await borrower.flashBorrow(lender.address, dai.address, 3, { from: user1 })
+    await borrower.flashBorrow(dai.address, 3, { from: user1 })
 
     balanceAfter = await dai.balanceOf(user1)
     balanceAfter.toString().should.equal(new BN('0').toString())
@@ -56,7 +56,7 @@ contract('FlashLender', (accounts) => {
     const fee = await lender.flashFee(weth.address, loan)
 
     await weth.mint(borrower.address, 1, { from: user1 })
-    await borrower.flashBorrow(lender.address, weth.address, loan, { from: user1 })
+    await borrower.flashBorrow(weth.address, loan, { from: user1 })
 
     const balanceAfter = await weth.balanceOf(user1)
     balanceAfter.toString().should.equal(new BN('0').toString())
@@ -74,13 +74,13 @@ contract('FlashLender', (accounts) => {
 
   it('needs to return funds after a flash loan', async () => {
     await expectRevert(
-      borrower.flashBorrowAndSteal(lender.address, weth.address, 1),
-      'ERC20: transfer amount exceeds allowance'
+      borrower.flashBorrowAndSteal(weth.address, 1),
+      'ERC20: insufficient-approval'
     )
   })
 
   it('should do two nested flash loans', async () => {
-    await borrower.flashBorrowAndReenter(lender.address, weth.address, 1)
+    await borrower.flashBorrowAndReenter(weth.address, 1)
 
     const flashBalance = await borrower.flashBalance()
     flashBalance.toString().should.equal('3')

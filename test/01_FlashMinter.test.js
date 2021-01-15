@@ -15,11 +15,11 @@ contract('FlashMinter', (accounts) => {
   beforeEach(async () => {
     weth = await FlashMinter.new("Test", "TST", 10)
     lender = weth
-    borrower = await FlashBorrower.new()
+    borrower = await FlashBorrower.new(lender.address)
   })
 
   it('should do a simple flash loan', async () => {
-    await borrower.flashBorrow(lender.address, weth.address, 1, { from: user1 })
+    await borrower.flashBorrow(weth.address, 1, { from: user1 })
 
     const balanceAfter = await lender.balanceOf(user1)
     balanceAfter.toString().should.equal(new BN('0').toString())
@@ -38,7 +38,7 @@ contract('FlashMinter', (accounts) => {
     const fee = await lender.flashFee(weth.address, loan)
   
     await weth.mint(borrower.address, 1, { from: user1 })
-    await borrower.flashBorrow(lender.address, weth.address, loan, { from: user1 })
+    await borrower.flashBorrow(weth.address, loan, { from: user1 })
 
     const balanceAfter = await lender.balanceOf(user1)
     balanceAfter.toString().should.equal('0')
@@ -63,13 +63,13 @@ contract('FlashMinter', (accounts) => {
 
   it('needs to return funds after a flash loan', async () => {
     await expectRevert(
-      borrower.flashBorrowAndSteal(lender.address, weth.address, 1),
+      borrower.flashBorrowAndSteal(weth.address, 1),
       'FlashMinter: Flash loan repayment not approved'
     )
   })
 
   it('should do two nested flash loans', async () => {
-    await borrower.flashBorrowAndReenter(lender.address, weth.address, 1)
+    await borrower.flashBorrowAndReenter(weth.address, 1)
 
     const flashBalance = await borrower.flashBalance()
     flashBalance.toString().should.equal('3')
