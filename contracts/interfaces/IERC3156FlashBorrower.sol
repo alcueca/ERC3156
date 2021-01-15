@@ -1,6 +1,5 @@
-// SPDX-License-Identifier: GPL-3.0-or-later
+// SPDX-License-Identifier: MIT
 pragma solidity ^0.7.0 || ^0.8.0;
-import "./IERC20.sol";
 
 
 interface IERC3156FlashBorrower {
@@ -15,7 +14,7 @@ interface IERC3156FlashBorrower {
      */
     function onFlashLoan(
         address sender,
-        IERC20 token,
+        address token,
         uint256 amount,
         uint256 fee,
         bytes calldata data

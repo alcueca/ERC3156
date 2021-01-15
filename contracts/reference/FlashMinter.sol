@@ -32,7 +32,7 @@ contract FlashMinter is ERC20, IERC3156FlashLender {
      * @return The amount of `token` that can be borrowed.
      */
     function maxFlashAmount(
-        IERC20 token
+        address token
     ) external view override returns (uint256) {
         return type(uint256).max - totalSupply();
     }
@@ -44,11 +44,11 @@ contract FlashMinter is ERC20, IERC3156FlashLender {
      * @return The amount of `token` to be charged for the loan, on top of the returned principal.
      */
     function flashFee(
-        IERC20 token,
+        address token,
         uint256 amount
     ) external view override returns (uint256) {
         require(
-            token == IERC20(address(this)),
+            token == address(this),
             "FlashMinter: unsupported loan currency"
         );
         return _flashFee(token, amount);
@@ -63,12 +63,12 @@ contract FlashMinter is ERC20, IERC3156FlashLender {
      */
     function flashLoan(
         IERC3156FlashBorrower receiver,
-        IERC20 token,
+        address token,
         uint256 amount,
         bytes calldata data
     ) external override {
         require(
-            token == IERC20(address(this)),
+            token == address(this),
             "FlashMinter: unsupported loan currency"
         );
         uint256 fee = _flashFee(token, amount);
@@ -90,7 +90,7 @@ contract FlashMinter is ERC20, IERC3156FlashLender {
      * @return The amount of `token` to be charged for the loan, on top of the returned principal.
      */
     function _flashFee(
-        IERC20 token,
+        address token,
         uint256 amount
     ) internal view returns (uint256) {
         return amount * fee / 10000;

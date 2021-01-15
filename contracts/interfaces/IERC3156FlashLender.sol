@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.7.0 || ^0.8.0;
 import "./IERC3156FlashBorrower.sol";
-import "./IERC20.sol";
 
 
 interface IERC3156FlashLender {
@@ -15,7 +14,7 @@ interface IERC3156FlashLender {
      */
     function flashLoan(
         IERC3156FlashBorrower receiver,
-        IERC20 token,
+        address token,
         uint256 amount,
         bytes calldata data
     ) external;
@@ -27,7 +26,7 @@ interface IERC3156FlashLender {
      * @return The amount of `token` to be charged for the loan, on top of the returned principal.
      */
     function flashFee(
-        IERC20 token,
+        address token,
         uint256 amount
     ) external view returns (uint256);
 
@@ -37,6 +36,6 @@ interface IERC3156FlashLender {
      * @return The amount of `token` that can be borrowed.
      */
     function maxFlashAmount(
-        IERC20 token
+        address token
     ) external view returns (uint256);
 }
