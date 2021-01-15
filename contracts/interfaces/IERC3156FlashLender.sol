@@ -1,9 +1,18 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity ^0.7.0 || ^0.8.0;
+import "./IERC3156FlashBorrower.sol";
 
 
 interface IERC3156FlashLender {
-    function flashLoan(address receiver, address token, uint256 value, bytes calldata data) external;
+
+    /**
+     * @dev Initiate a flash loan.
+     * @param receiver The receiver of the tokens in the loan, and the receiver of the callback.
+     * @param token The loan currency.
+     * @param value The amount of tokens lent.
+     * @param data Arbitrary data structure, intended to contain user-defined parameters.
+     */
+    function flashLoan(IERC3156FlashBorrower receiver, address token, uint256 value, bytes calldata data) external;
 
     /**
      * @dev The fee to be charged for a given loan.

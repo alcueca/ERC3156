@@ -56,7 +56,7 @@ contract AaveERC3156 is IERC3156FlashLender, AaveFlashBorrowerLike {
      * @param amount The amount of tokens lent.
      * @param userData A data parameter to be passed on to the `receiver` for any custom use.
      */
-    function flashLoan(address receiver, address token, uint256 amount, bytes calldata userData) external override {
+    function flashLoan(IERC3156FlashBorrower receiver, address token, uint256 amount, bytes calldata userData) external override {
         address[] memory tokens = new address[](1);
         tokens[0] = address(token);
 
@@ -95,7 +95,8 @@ contract AaveERC3156 is IERC3156FlashLender, AaveFlashBorrowerLike {
         require(msg.sender == address(lendingPool), "Callbacks only allowed from Lending Pool");
         require(sender == address(this), "Callbacks only initiated from this contract");
 
-        (address origin, address receiver, bytes memory userData) = abi.decode(data, (address, address, bytes));
+        (address origin, IERC3156FlashBorrower receiver, bytes memory userData) = 
+            abi.decode(data, (address, IERC3156FlashBorrower, bytes));
 
         address token = tokens[0];
         uint256 amount = amounts[0];
@@ -103,7 +104,7 @@ contract AaveERC3156 is IERC3156FlashLender, AaveFlashBorrowerLike {
 
         // Send the tokens to the original receiver using the ERC-3156 interface
         IERC20(token).transfer(origin, amount);
-        IERC3156FlashBorrower(receiver).onFlashLoan(origin, token, amount, fee, userData);
+        receiver.onFlashLoan(origin, token, amount, fee, userData);
         IERC20(token).transferFrom(origin, address(this), amount.add(fee));
 
         // Approve the LendingPool contract allowance to *pull* the owed amount

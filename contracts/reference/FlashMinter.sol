@@ -48,15 +48,15 @@ contract FlashMinter is ERC20, IERC3156FlashLender {
      * @param amount The amount of tokens lent.
      * @param data A data parameter to be passed on to the `receiver` for any custom use.
      */
-    function flashLoan(address receiver, address token, uint256 amount, bytes calldata data) external override {
+    function flashLoan(IERC3156FlashBorrower receiver, address token, uint256 amount, bytes calldata data) external override {
         require(token == address(this), "FlashMinter: unsupported loan currency");
         uint256 fee = _flashFee(token, amount);
-        _mint(receiver, amount);
-        IERC3156FlashBorrower(receiver).onFlashLoan(msg.sender, token, amount, fee, data);
-        uint256 _allowance = allowance[receiver][address(this)];
+        _mint(address(receiver), amount);
+        receiver.onFlashLoan(msg.sender, token, amount, fee, data);
+        uint256 _allowance = allowance[address(receiver)][address(this)];
         require(_allowance >= (amount + fee), "FlashMinter: Flash loan repayment not approved");
-        _approve(receiver, address(this), _allowance - (amount + fee));
-        _burn(receiver, amount + fee);
+        _approve(address(receiver), address(this), _allowance - (amount + fee));
+        _burn(address(receiver), amount + fee);
     }
 
     /**

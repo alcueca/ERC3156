@@ -49,17 +49,18 @@ contract YieldFYDaiERC3156 is IERC3156FlashLender, YieldFlashBorrowerLike {
      * @param amount The amount of tokens lent.
      * @param userData A data parameter to be passed on to the `receiver` for any custom use.
      */
-    function flashLoan(address receiver, address token, uint256 amount, bytes memory userData) public override {
+    function flashLoan(IERC3156FlashBorrower receiver, address token, uint256 amount, bytes memory userData) public override {
         bytes memory data = abi.encode(msg.sender, receiver, userData);
         IFYDai(token).flashMint(amount, data);
     }
 
     /// @dev FYDai flash loan callback. It sends the value borrowed to `receiver`, and takes the value back after the callback.
     function executeOnFlashMint(uint256 amount, bytes memory data) public override {
-        (address origin, address receiver, bytes memory userData) = abi.decode(data, (address, address, bytes));
-        IFYDai(msg.sender).transfer(receiver, amount);
-        IERC3156FlashBorrower(receiver).onFlashLoan(origin, msg.sender, amount, 0, userData); // msg.sender is the lending fyDai contract
-        IFYDai(msg.sender).transferFrom(receiver, address(this), amount);
+        (address origin, IERC3156FlashBorrower receiver, bytes memory userData) = 
+            abi.decode(data, (address, IERC3156FlashBorrower, bytes));
+        IFYDai(msg.sender).transfer(address(receiver), amount);
+        receiver.onFlashLoan(origin, msg.sender, amount, 0, userData); // msg.sender is the lending fyDai contract
+        IFYDai(msg.sender).transferFrom(address(receiver), address(this), amount);
         IFYDai(msg.sender).approve(msg.sender, amount);
     }
 }

@@ -3,5 +3,14 @@ pragma solidity ^0.7.0 || ^0.8.0;
 
 
 interface IERC3156FlashBorrower {
-    function onFlashLoan(address user, address token, uint256 value, uint256 fee, bytes calldata) external;
+
+    /**
+     * @dev Receive a flash loan.
+     * @param sender The initiator of the loan.
+     * @param token The loan currency.
+     * @param value The amount of tokens lent.
+     * @param fee The additional amount of tokens to repay.
+     * @param data Arbitrary data structure, intended to contain user-defined parameters.
+     */
+    function onFlashLoan(address sender, address token, uint256 value, uint256 fee, bytes calldata data) external;
 }

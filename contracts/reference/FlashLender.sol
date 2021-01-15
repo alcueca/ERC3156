@@ -34,12 +34,12 @@ contract FlashLender is IERC3156FlashLender {
      * @param amount The amount of tokens lent.
      * @param data A data parameter to be passed on to the `receiver` for any custom use.
      */
-    function flashLoan(address receiver, address token, uint256 amount, bytes calldata data) external override {
+    function flashLoan(IERC3156FlashBorrower receiver, address token, uint256 amount, bytes calldata data) external override {
         require(supportedTokens[token], "FlashLender: Unsupported currency");
         uint256 fee = _flashFee(token, amount);
-        IERC20(token).transfer(receiver, amount);
-        IERC3156FlashBorrower(receiver).onFlashLoan(msg.sender, token, amount, fee, data);
-        IERC20(token).transferFrom(receiver, address(this), amount + fee);
+        IERC20(token).transfer(address(receiver), amount);
+        receiver.onFlashLoan(msg.sender, token, amount, fee, data);
+        IERC20(token).transferFrom(address(receiver), address(this), amount + fee);
     }
 
     /**

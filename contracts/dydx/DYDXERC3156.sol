@@ -67,7 +67,7 @@ contract DYDXERC3156 is IERC3156FlashLender, DYDXFlashBorrowerLike {
      * @param amount The amount of tokens lent.
      * @param userData A data parameter to be passed on to the `receiver` for any custom use.
      */
-    function flashLoan(address receiver, address token, uint256 amount, bytes memory userData) external override {
+    function flashLoan(IERC3156FlashBorrower receiver, address token, uint256 amount, bytes memory userData) external override {
         DYDXDataTypes.ActionArgs[] memory operations = new DYDXDataTypes.ActionArgs[](3);
         operations[0] = getWithdrawAction(token, amount);
         operations[1] = getCallAction(abi.encode(msg.sender, receiver, token, amount, userData));
@@ -89,15 +89,15 @@ contract DYDXERC3156 is IERC3156FlashLender, DYDXFlashBorrowerLike {
         require(msg.sender == address(soloMargin), "Callback only from SoloMargin");
         require(sender == address(this), "FlashLoan only from this contract");
 
-        (address origin, address receiver, address token, uint256 amount, bytes memory userData) = 
-            abi.decode(data, (address, address, address, uint256, bytes));
+        (address origin, IERC3156FlashBorrower receiver, address token, uint256 amount, bytes memory userData) = 
+            abi.decode(data, (address, IERC3156FlashBorrower, address, uint256, bytes));
 
         uint256 fee = flashFee(token, amount);
 
         // Transfer to `receiver`
-        require(IERC20(token).transfer(receiver, amount), "Transfer failed");
-        IERC3156FlashBorrower(receiver).onFlashLoan(origin, token, amount, fee, userData);
-        require(IERC20(token).transferFrom(receiver, address(this), amount.add(fee)), "Transfer failed");
+        require(IERC20(token).transfer(address(receiver), amount), "Transfer failed");
+        receiver.onFlashLoan(origin, token, amount, fee, userData);
+        require(IERC20(token).transferFrom(address(receiver), address(this), amount.add(fee)), "Transfer failed");
 
         // Approve the SoloMargin contract allowance to *pull* the owed amount
         IERC20(token).approve(address(soloMargin), amount.add(fee));            

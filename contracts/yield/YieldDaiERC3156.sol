@@ -71,7 +71,7 @@ contract YieldDaiERC3156 is IERC3156FlashLender, YieldFlashBorrowerLike {
      * @param amount The amount of tokens lent.
      * @param userData A data parameter to be passed on to the `receiver` for any custom use.
      */
-    function flashLoan(address receiver, address token, uint256 amount, bytes memory userData) public override {
+    function flashLoan(IERC3156FlashBorrower receiver, address token, uint256 amount, bytes memory userData) public override {
         require(token == address(pool.dai()), "Unsupported currency");
         bytes memory data = abi.encode(msg.sender, receiver, amount, userData);
         uint256 fyDaiAmount = pool.buyDaiPreview(amount.toUint128());
@@ -82,13 +82,14 @@ contract YieldDaiERC3156 is IERC3156FlashLender, YieldFlashBorrowerLike {
     function executeOnFlashMint(uint256 fyDaiAmount, bytes memory data) public override {
         require(msg.sender == address(pool.fyDai()), "Callbacks only allowed from fyDai contract");
 
-        (address origin, address receiver, uint256 amount, bytes memory userData) = abi.decode(data, (address, address, uint256, bytes));
+        (address origin, IERC3156FlashBorrower receiver, uint256 amount, bytes memory userData) = 
+            abi.decode(data, (address, IERC3156FlashBorrower, uint256, bytes));
 
         uint256 paidFYDai = pool.buyDai(address(this), address(receiver), amount.toUint128());
 
         uint256 fee = uint256(pool.buyFYDaiPreview(fyDaiAmount.toUint128())).sub(amount);
-        IERC3156FlashBorrower(receiver).onFlashLoan(origin, address(pool.dai()), amount, fee, userData);
-        pool.dai().transferFrom(receiver, address(this), amount.add(fee));
+        receiver.onFlashLoan(origin, address(pool.dai()), amount, fee, userData);
+        pool.dai().transferFrom(address(receiver), address(this), amount.add(fee));
         pool.sellDai(address(this), address(this), amount.add(fee).toUint128());
     }
 }

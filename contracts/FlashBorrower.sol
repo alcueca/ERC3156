@@ -28,34 +28,34 @@ contract FlashBorrower is IERC3156FlashBorrower {
         } else if (action == Action.STEAL) {
             // do nothing
         } else if (action == Action.REENTER) {
-            flashBorrow(msg.sender, token, amount * 2);
+            flashBorrow(IERC3156FlashLender(msg.sender), token, amount * 2);
         }
     }
 
-    function flashBorrow(address lender, address token, uint256 amount) public {
+    function flashBorrow(IERC3156FlashLender lender, address token, uint256 amount) public {
         // Use this to pack arbitrary data to `onFlashLoan`
         bytes memory data = abi.encode(Action.NORMAL);
         approveRepayment(lender, token, amount);
-        IERC3156FlashLender(lender).flashLoan(address(this), token, amount, data);
+        lender.flashLoan(this, token, amount, data);
     }
 
-    function flashBorrowAndSteal(address lender, address token, uint256 amount) public {
+    function flashBorrowAndSteal(IERC3156FlashLender lender, address token, uint256 amount) public {
         // Use this to pack arbitrary data to `onFlashLoan`
         bytes memory data = abi.encode(Action.STEAL);
-        IERC3156FlashLender(lender).flashLoan(address(this), token, amount, data);
+        lender.flashLoan(this, token, amount, data);
     }
 
-    function flashBorrowAndReenter(address lender, address token, uint256 amount) public {
+    function flashBorrowAndReenter(IERC3156FlashLender lender, address token, uint256 amount) public {
         // Use this to pack arbitrary data to `onFlashLoan`
         bytes memory data = abi.encode(Action.REENTER);
         approveRepayment(lender, token, amount);
-        IERC3156FlashLender(lender).flashLoan(address(this), token, amount, data);
+        lender.flashLoan(this, token, amount, data);
     }
 
-    function approveRepayment(address lender, address token, uint256 amount) public {
-        uint256 _allowance = IERC20(token).allowance(address(this), lender);
-        uint256 _fee = IERC3156FlashLender(lender).flashFee(token, amount);
+    function approveRepayment(IERC3156FlashLender lender, address token, uint256 amount) public {
+        uint256 _allowance = IERC20(token).allowance(address(this), address(lender));
+        uint256 _fee = lender.flashFee(token, amount);
         uint256 _repayment = amount + _fee;
-        IERC20(token).approve(lender, _allowance + _repayment);
+        IERC20(token).approve(address(lender), _allowance + _repayment);
     }
 }

@@ -77,7 +77,7 @@ contract UniswapERC3156 is IERC3156FlashLender, UniswapV2FlashBorrowerLike {
      * @param amount The amount of tokens lent.
      * @param userData A data parameter to be passed on to the `receiver` for any custom use.
      */
-    function flashLoan(address receiver, address token, uint256 amount, bytes memory userData) external override {
+    function flashLoan(IERC3156FlashBorrower receiver, address token, uint256 amount, bytes memory userData) external override {
         address pairAddress = getPairAddress(token);
         require(pairAddress != address(0), "Unsupported currency");
 
@@ -109,19 +109,19 @@ contract UniswapERC3156 is IERC3156FlashLender, UniswapV2FlashBorrowerLike {
         // decode data
         (
             address origin,
-            address receiver,
+            IERC3156FlashBorrower receiver,
             address token,
             bytes memory userData
-        ) = abi.decode(data, (address, address, address, bytes));
+        ) = abi.decode(data, (address, IERC3156FlashBorrower, address, bytes));
 
         uint256 fee = flashFee(token, amount);
         
         // send the borrowed amount to the receiver
-        IERC20(token).transfer(receiver, amount);
+        IERC20(token).transfer(address(receiver), amount);
         // do whatever the user wants
-        IERC3156FlashBorrower(receiver).onFlashLoan(origin, token, amount, fee, userData);
+        receiver.onFlashLoan(origin, token, amount, fee, userData);
         // retrieve the borrowed amount plus fee from the receiver
-        IERC20(token).transferFrom(receiver, address(this), amount.add(fee));
+        IERC20(token).transferFrom(address(receiver), address(this), amount.add(fee));
         
         // send the borrowed amount plus fee to the uniswap pair
         IERC20(token).transfer(msg.sender, amount.add(fee));
