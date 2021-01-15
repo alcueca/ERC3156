@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: GPL-3.0-or-later
+// SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
 import "../ERC20.sol";
@@ -18,7 +18,11 @@ contract FlashMinter is ERC20, IERC3156FlashLender {
     /**
      * @param fee_ The percentage of the loan `amount` that needs to be repaid, in addition to `amount`.
      */
-    constructor (string memory name, string memory symbol, uint256 fee_) ERC20(name, symbol) {
+    constructor (
+        string memory name,
+        string memory symbol,
+        uint256 fee_
+    ) ERC20(name, symbol) {
         fee = fee_;
     }
 
@@ -27,7 +31,9 @@ contract FlashMinter is ERC20, IERC3156FlashLender {
      * @param token The loan currency.
      * @return The amount of `token` that can be borrowed.
      */
-    function maxFlashAmount(IERC20 token) external view override returns (uint256) {
+    function maxFlashAmount(
+        IERC20 token
+    ) external view override returns (uint256) {
         return type(uint256).max - totalSupply();
     }
 
@@ -37,8 +43,14 @@ contract FlashMinter is ERC20, IERC3156FlashLender {
      * @param amount The amount of tokens lent.
      * @return The amount of `token` to be charged for the loan, on top of the returned principal.
      */
-    function flashFee(IERC20 token, uint256 amount) external view override returns (uint256) {
-        require(token == IERC20(address(this)), "FlashMinter: unsupported loan currency");
+    function flashFee(
+        IERC20 token,
+        uint256 amount
+    ) external view override returns (uint256) {
+        require(
+            token == IERC20(address(this)),
+            "FlashMinter: unsupported loan currency"
+        );
         return _flashFee(token, amount);
     }
 
@@ -49,13 +61,24 @@ contract FlashMinter is ERC20, IERC3156FlashLender {
      * @param amount The amount of tokens lent.
      * @param data A data parameter to be passed on to the `receiver` for any custom use.
      */
-    function flashLoan(IERC3156FlashBorrower receiver, IERC20 token, uint256 amount, bytes calldata data) external override {
-        require(token == IERC20(address(this)), "FlashMinter: unsupported loan currency");
+    function flashLoan(
+        IERC3156FlashBorrower receiver,
+        IERC20 token,
+        uint256 amount,
+        bytes calldata data
+    ) external override {
+        require(
+            token == IERC20(address(this)),
+            "FlashMinter: unsupported loan currency"
+        );
         uint256 fee = _flashFee(token, amount);
         _mint(address(receiver), amount);
         receiver.onFlashLoan(msg.sender, token, amount, fee, data);
         uint256 _allowance = allowance(address(receiver), address(this));
-        require(_allowance >= (amount + fee), "FlashMinter: Flash loan repayment not approved");
+        require(
+            _allowance >= (amount + fee),
+            "FlashMinter: Flash loan repayment not approved"
+        );
         _approve(address(receiver), address(this), _allowance - (amount + fee));
         _burn(address(receiver), amount + fee);
     }
@@ -66,7 +89,10 @@ contract FlashMinter is ERC20, IERC3156FlashLender {
      * @param amount The amount of tokens lent.
      * @return The amount of `token` to be charged for the loan, on top of the returned principal.
      */
-    function _flashFee(IERC20 token, uint256 amount) internal view returns (uint256) {
+    function _flashFee(
+        IERC20 token,
+        uint256 amount
+    ) internal view returns (uint256) {
         return amount * fee / 10000;
     }
 }

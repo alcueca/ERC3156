@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: GPL-3.0-or-later
+// SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
 import "../interfaces/IERC20.sol";
@@ -20,7 +20,10 @@ contract FlashLender is IERC3156FlashLender {
      * @param supportedTokens_ Token contracts supported for flash lending.
      * @param fee_ The percentage of the loan `amount` that needs to be repaid, in addition to `amount`.
      */
-    constructor(IERC20[] memory supportedTokens_, uint256 fee_) {
+    constructor(
+        IERC20[] memory supportedTokens_,
+        uint256 fee_
+    ) {
         for (uint256 i = 0; i < supportedTokens_.length; i++) {
             supportedTokens[supportedTokens_[i]] = true;
         }
@@ -34,12 +37,26 @@ contract FlashLender is IERC3156FlashLender {
      * @param amount The amount of tokens lent.
      * @param data A data parameter to be passed on to the `receiver` for any custom use.
      */
-    function flashLoan(IERC3156FlashBorrower receiver, IERC20 token, uint256 amount, bytes calldata data) external override {
-        require(supportedTokens[token], "FlashLender: Unsupported currency");
+    function flashLoan(
+        IERC3156FlashBorrower receiver,
+        IERC20 token,
+        uint256 amount,
+        bytes calldata data
+    ) external override {
+        require(
+            supportedTokens[token],
+            "FlashLender: Unsupported currency"
+        );
         uint256 fee = _flashFee(token, amount);
-        token.transfer(address(receiver), amount);
+        require(
+            token.transfer(address(receiver), amount),
+            "FlashLender: Transfer failed"
+        );
         receiver.onFlashLoan(msg.sender, token, amount, fee, data);
-        token.transferFrom(address(receiver), address(this), amount + fee);
+        require(
+            token.transferFrom(address(receiver), address(this), amount + fee),
+            "FlashLender: Repay failed"
+        );
     }
 
     /**
@@ -48,8 +65,14 @@ contract FlashLender is IERC3156FlashLender {
      * @param amount The amount of tokens lent.
      * @return The amount of `token` to be charged for the loan, on top of the returned principal.
      */
-    function flashFee(IERC20 token, uint256 amount) external view override returns (uint256) {
-        require(supportedTokens[token], "FlashLender: Unsupported currency");
+    function flashFee(
+        IERC20 token,
+        uint256 amount
+    ) external view override returns (uint256) {
+        require(
+            supportedTokens[token],
+            "FlashLender: Unsupported currency"
+        );
         return _flashFee(token, amount);
     }
 
@@ -59,7 +82,10 @@ contract FlashLender is IERC3156FlashLender {
      * @param amount The amount of tokens lent.
      * @return The amount of `token` to be charged for the loan, on top of the returned principal.
      */
-    function _flashFee(IERC20 token, uint256 amount) internal view returns (uint256) {
+    function _flashFee(
+        IERC20 token,
+        uint256 amount
+    ) internal view returns (uint256) {
         return amount * fee / 10000;
     }
 
@@ -68,7 +94,9 @@ contract FlashLender is IERC3156FlashLender {
      * @param token The loan currency.
      * @return The amount of `token` that can be borrowed.
      */
-    function maxFlashAmount(IERC20 token) external view override returns (uint256) {
+    function maxFlashAmount(
+        IERC20 token
+    ) external view override returns (uint256) {
         return supportedTokens[token] ? token.balanceOf(address(this)) : 0;
     }
 }
