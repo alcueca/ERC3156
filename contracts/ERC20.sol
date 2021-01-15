@@ -20,25 +20,37 @@ pragma solidity  ^0.8.0;
 
 
 contract ERC20 {
-    uint256                                           public  totalSupply;
-    mapping (address => uint256)                      public  balanceOf;
-    mapping (address => mapping (address => uint256)) public  allowance;
-    string                                            public  symbol;
-    uint256                                           public  decimals = 18; // standard token precision. override to customize
-    string                                            public  name = "";     // Optional token name
+    uint256                                           internal  _totalSupply;
+    mapping (address => uint256)                      internal  _balanceOf;
+    mapping (address => mapping (address => uint256)) internal  _allowance;
+    string                                            public    symbol;
+    uint256                                           public    decimals = 18; // standard token precision. override to customize
+    string                                            public    name = "";     // Optional token name
 
     constructor(string memory name_, string memory symbol_) {
         name = name_;
         symbol = symbol_;
     }
 
-    event Approval(address indexed src, address indexed guy, uint wad);
+    event Approval(address indexed owner, address indexed spender, uint wad);
     event Transfer(address indexed src, address indexed dst, uint wad);
-    event Mint(address indexed guy, uint wad);
-    event Burn(address indexed guy, uint wad);
+    event Mint(address indexed dst, uint wad);
+    event Burn(address indexed src, uint wad);
 
-    function approve(address guy, uint wad) public returns (bool) {
-        return _approve(msg.sender, guy, wad);
+    function totalSupply() public view returns (uint256) {
+        return _totalSupply;
+    }
+
+    function balanceOf(address guy) public view returns (uint256) {
+        return _balanceOf[guy];
+    }
+
+    function allowance(address owner, address spender) public view returns (uint256) {
+        return _allowance[owner][spender];
+    }
+
+    function approve(address spender, uint wad) public returns (bool) {
+        return _approve(msg.sender, spender, wad);
     }
 
     function transfer(address dst, uint wad) external returns (bool) {
@@ -46,14 +58,15 @@ contract ERC20 {
     }
 
     function transferFrom(address src, address dst, uint wad) public returns (bool) {
-        if (src != msg.sender && allowance[src][msg.sender] != type(uint).max) {
-            require(allowance[src][msg.sender] >= wad, "ERC20: insufficient-approval");
-            allowance[src][msg.sender] = allowance[src][msg.sender] - wad;
+        uint256 allowed = _allowance[src][msg.sender];
+        if (src != msg.sender && allowed != type(uint).max) {
+            require(allowed >= wad, "ERC20: insufficient-approval");
+            _approve(src, msg.sender, allowed - wad);
         }
 
-        require(balanceOf[src] >= wad, "ERC20: insufficient-balance");
-        balanceOf[src] = balanceOf[src] - wad;
-        balanceOf[dst] = balanceOf[dst] + wad;
+        require(_balanceOf[src] >= wad, "ERC20: insufficient-balance");
+        _balanceOf[src] = _balanceOf[src] - wad;
+        _balanceOf[dst] = _balanceOf[dst] + wad;
 
         emit Transfer(src, dst, wad);
 
@@ -61,26 +74,27 @@ contract ERC20 {
     }
 
     function _approve(address owner, address spender, uint wad) internal returns (bool) {
-        allowance[owner][spender] = wad;
+        _allowance[owner][spender] = wad;
         emit Approval(owner, spender, wad);
         return true;
     }
 
-    function _mint(address guy, uint wad) internal {
-        balanceOf[guy] = balanceOf[guy] + wad;
-        totalSupply = totalSupply + wad;
-        emit Mint(guy, wad);
+    function _mint(address dst, uint wad) internal {
+        _balanceOf[dst] = _balanceOf[dst] + wad;
+        _totalSupply = _totalSupply + wad;
+        emit Mint(dst, wad);
     }
 
-    function _burn(address guy, uint wad) internal {
-        if (guy != msg.sender && allowance[guy][msg.sender] != type(uint).max) {
-            require(allowance[guy][msg.sender] >= wad, "ERC20: insufficient-approval");
-            allowance[guy][msg.sender] = allowance[guy][msg.sender] - wad;
+    function _burn(address src, uint wad) internal {
+        uint256 allowed = _allowance[src][msg.sender];
+        if (src != msg.sender && allowed != type(uint).max) {
+            require(allowed >= wad, "ERC20: insufficient-approval");
+            _approve(src, msg.sender, allowed - wad);
         }
 
-        require(balanceOf[guy] >= wad, "ERC20: insufficient-balance");
-        balanceOf[guy] = balanceOf[guy] - wad;
-        totalSupply = totalSupply - wad;
-        emit Burn(guy, wad);
+        require(_balanceOf[src] >= wad, "ERC20: insufficient-balance");
+        _balanceOf[src] = _balanceOf[src] - wad;
+        _totalSupply = _totalSupply - wad;
+        emit Burn(src, wad);
     }
 }

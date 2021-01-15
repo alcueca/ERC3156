@@ -11,12 +11,12 @@ contract FlashBorrower is IERC3156FlashBorrower {
 
     uint256 public flashBalance;
     address public flashSender;
-    address public flashToken;
+    IERC20 public flashToken;
     uint256 public flashAmount;
     uint256 public flashFee;
 
     /// @dev ERC-3156 Flash loan callback
-    function onFlashLoan(address sender, address token, uint256 amount, uint256 fee, bytes calldata data) external override {
+    function onFlashLoan(address sender, IERC20 token, uint256 amount, uint256 fee, bytes calldata data) external override {
         require(sender == address(this), "FlashBorrower: External loan initiator");
         (Action action) = abi.decode(data, (Action)); // Use this to unpack arbitrary data
         flashSender = sender;
@@ -32,30 +32,30 @@ contract FlashBorrower is IERC3156FlashBorrower {
         }
     }
 
-    function flashBorrow(IERC3156FlashLender lender, address token, uint256 amount) public {
+    function flashBorrow(IERC3156FlashLender lender, IERC20 token, uint256 amount) public {
         // Use this to pack arbitrary data to `onFlashLoan`
         bytes memory data = abi.encode(Action.NORMAL);
         approveRepayment(lender, token, amount);
         lender.flashLoan(this, token, amount, data);
     }
 
-    function flashBorrowAndSteal(IERC3156FlashLender lender, address token, uint256 amount) public {
+    function flashBorrowAndSteal(IERC3156FlashLender lender, IERC20 token, uint256 amount) public {
         // Use this to pack arbitrary data to `onFlashLoan`
         bytes memory data = abi.encode(Action.STEAL);
         lender.flashLoan(this, token, amount, data);
     }
 
-    function flashBorrowAndReenter(IERC3156FlashLender lender, address token, uint256 amount) public {
+    function flashBorrowAndReenter(IERC3156FlashLender lender, IERC20 token, uint256 amount) public {
         // Use this to pack arbitrary data to `onFlashLoan`
         bytes memory data = abi.encode(Action.REENTER);
         approveRepayment(lender, token, amount);
         lender.flashLoan(this, token, amount, data);
     }
 
-    function approveRepayment(IERC3156FlashLender lender, address token, uint256 amount) public {
-        uint256 _allowance = IERC20(token).allowance(address(this), address(lender));
+    function approveRepayment(IERC3156FlashLender lender, IERC20 token, uint256 amount) public {
+        uint256 _allowance = token.allowance(address(this), address(lender));
         uint256 _fee = lender.flashFee(token, amount);
         uint256 _repayment = amount + _fee;
-        IERC20(token).approve(address(lender), _allowance + _repayment);
+        token.approve(address(lender), _allowance + _repayment);
     }
 }

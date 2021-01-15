@@ -16,7 +16,7 @@ contract('FlashLender', (accounts) => {
   beforeEach(async () => {
     weth = await ERC20Currency.new("WETH", "WETH")
     dai = await ERC20Currency.new("DAI", "DAI")
-    lender = await FlashLender.new([weth.address, dai.address], 1000)
+    lender = await FlashLender.new([weth.address, dai.address], 10)
     borrower = await FlashBorrower.new()
 
     await weth.mint(lender.address, 1000)
@@ -68,27 +68,6 @@ contract('FlashLender', (accounts) => {
     flashAmount.toString().should.equal(loan.toString())
     const flashFee = await borrower.flashFee()
     flashFee.toString().should.equal(fee.toString())
-    const flashSender = await borrower.flashSender()
-    flashSender.toString().should.equal(borrower.address)
-  })
-
-  it('lenders can choose to charge no fees', async () => {
-    const loan = new BN('1000')
-    lender = await FlashLender.new([weth.address, dai.address], MAX)
-    await weth.mint(lender.address, loan)
-
-    await borrower.flashBorrow(lender.address, weth.address, loan, { from: user1 })
-
-    const balanceAfter = await weth.balanceOf(user1)
-    balanceAfter.toString().should.equal('0')
-    const flashBalance = await borrower.flashBalance()
-    flashBalance.toString().should.equal(loan.toString())
-    const flashToken = await borrower.flashToken()
-    flashToken.toString().should.equal(weth.address)
-    const flashAmount = await borrower.flashAmount()
-    flashAmount.toString().should.equal(loan.toString())
-    const flashFee = await borrower.flashFee()
-    flashFee.toString().should.equal('0')
     const flashSender = await borrower.flashSender()
     flashSender.toString().should.equal(borrower.address)
   })

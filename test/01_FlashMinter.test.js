@@ -13,7 +13,7 @@ contract('FlashMinter', (accounts) => {
   let weth
 
   beforeEach(async () => {
-    weth = await FlashMinter.new("Test", "TST", 1000)
+    weth = await FlashMinter.new("Test", "TST", 10)
     lender = weth
     borrower = await FlashBorrower.new()
   })
@@ -50,27 +50,6 @@ contract('FlashMinter', (accounts) => {
     flashAmount.toString().should.equal(loan.toString())
     const flashFee = await borrower.flashFee()
     flashFee.toString().should.equal(fee.toString())
-    const flashSender = await borrower.flashSender()
-    flashSender.toString().should.equal(borrower.address)
-  })
-
-
-  it('lenders can choose to charge no fees', async () => {
-    lender = await FlashMinter.new("Test", "TST", MAX)
-    weth = lender
-
-    await borrower.flashBorrow(lender.address, weth.address, 1000, { from: user1 })
-
-    const balanceAfter = await lender.balanceOf(user1)
-    balanceAfter.toString().should.equal(new BN('0').toString())
-    const flashBalance = await borrower.flashBalance()
-    flashBalance.toString().should.equal(new BN('1000').toString())
-    const flashToken = await borrower.flashToken()
-    flashToken.toString().should.equal(weth.address)
-    const flashAmount = await borrower.flashAmount()
-    flashAmount.toString().should.equal(new BN('1000').toString())
-    const flashFee = await borrower.flashFee()
-    flashFee.toString().should.equal(new BN('0').toString())
     const flashSender = await borrower.flashSender()
     flashSender.toString().should.equal(borrower.address)
   })

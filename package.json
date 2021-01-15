@@ -1,6 +1,6 @@
 {
-  "name": "erc20flash",
-  "version": "0.3.0",
+  "name": "erc3156",
+  "version": "0.4.0",
   "description": "Solidity contracts implementing flash lending",
   "author": "Alberto Cuesta Cañada",
   "engines": {
