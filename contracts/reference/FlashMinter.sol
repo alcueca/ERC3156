@@ -49,7 +49,7 @@ contract FlashMinter is ERC20, IERC3156FlashLender {
     ) external view override returns (uint256) {
         require(
             token == address(this),
-            "FlashMinter: unsupported loan currency"
+            "FlashMinter: Unsupported currency"
         );
         return _flashFee(token, amount);
     }
@@ -66,21 +66,25 @@ contract FlashMinter is ERC20, IERC3156FlashLender {
         address token,
         uint256 amount,
         bytes calldata data
-    ) external override {
+    ) external override returns (bool){
         require(
             token == address(this),
-            "FlashMinter: unsupported loan currency"
+            "FlashMinter: Unsupported currency"
         );
         uint256 fee = _flashFee(token, amount);
         _mint(address(receiver), amount);
-        receiver.onFlashLoan(msg.sender, token, amount, fee, data);
+        require(
+            receiver.onFlashLoan(msg.sender, token, amount, fee, data),
+            "FlashMinter: Callback failed"
+        );
         uint256 _allowance = allowance(address(receiver), address(this));
         require(
             _allowance >= (amount + fee),
-            "FlashMinter: Flash loan repayment not approved"
+            "FlashMinter: Repay not approved"
         );
         _approve(address(receiver), address(this), _allowance - (amount + fee));
         _burn(address(receiver), amount + fee);
+        return true;
     }
 
     /**

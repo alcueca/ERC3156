@@ -17,7 +17,7 @@ interface IERC3156FlashLender {
         address token,
         uint256 amount,
         bytes calldata data
-    ) external;
+    ) external returns (bool);
 
     /**
      * @dev The fee to be charged for a given loan.

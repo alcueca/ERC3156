@@ -42,7 +42,7 @@ contract FlashLender is IERC3156FlashLender {
         address token,
         uint256 amount,
         bytes calldata data
-    ) external override {
+    ) external override returns(bool) {
         require(
             supportedTokens[token],
             "FlashLender: Unsupported currency"
@@ -52,11 +52,15 @@ contract FlashLender is IERC3156FlashLender {
             IERC20(token).transfer(address(receiver), amount),
             "FlashLender: Transfer failed"
         );
-        receiver.onFlashLoan(msg.sender, token, amount, fee, data);
+        require(
+            receiver.onFlashLoan(msg.sender, token, amount, fee, data),
+            "FlashLender: Callback failed")
+        ;
         require(
             IERC20(token).transferFrom(address(receiver), address(this), amount + fee),
             "FlashLender: Repay failed"
         );
+        return true;
     }
 
     /**
