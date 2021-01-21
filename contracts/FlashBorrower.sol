@@ -28,7 +28,7 @@ contract FlashBorrower is IERC3156FlashBorrower {
         uint256 amount,
         uint256 fee,
         bytes calldata data
-    ) external override returns(bool) {
+    ) external override returns(bytes32) {
         require(msg.sender == address(lender), "FlashBorrower: Untrusted lender");
         require(sender == address(this), "FlashBorrower: External loan initiator");
         (Action action) = abi.decode(data, (Action)); // Use this to unpack arbitrary data
@@ -43,7 +43,7 @@ contract FlashBorrower is IERC3156FlashBorrower {
         } else if (action == Action.REENTER) {
             flashBorrow(token, amount * 2);
         }
-        return true;
+        return keccak256("ERC3156FlashBorrower.onFlashLoan");
     }
 
     function flashBorrow(address token, uint256 amount) public {
