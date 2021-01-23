@@ -1,4 +1,4 @@
-# ERC20 Flash
+# ERC3156 Reference Implementation
 
 This project is the reference implementation the [ERC 3156 Flash Loan](https://github.com/ethereum/EIPs/blob/master/EIPS/eip-3156.md) standard.
 

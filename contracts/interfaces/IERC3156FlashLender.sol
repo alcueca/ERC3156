@@ -6,18 +6,13 @@ import "./IERC3156FlashBorrower.sol";
 interface IERC3156FlashLender {
 
     /**
-     * @dev Initiate a flash loan.
-     * @param receiver The receiver of the tokens in the loan, and the receiver of the callback.
+     * @dev The amount of currency available to be lended.
      * @param token The loan currency.
-     * @param amount The amount of tokens lent.
-     * @param data Arbitrary data structure, intended to contain user-defined parameters.
+     * @return The amount of `token` that can be borrowed.
      */
-    function flashLoan(
-        IERC3156FlashBorrower receiver,
-        address token,
-        uint256 amount,
-        bytes calldata data
-    ) external;
+    function maxFlashAmount(
+        address token
+    ) external view returns (uint256);
 
     /**
      * @dev The fee to be charged for a given loan.
@@ -31,11 +26,16 @@ interface IERC3156FlashLender {
     ) external view returns (uint256);
 
     /**
-     * @dev The amount of currency available to be lended.
+     * @dev Initiate a flash loan.
+     * @param receiver The receiver of the tokens in the loan, and the receiver of the callback.
      * @param token The loan currency.
-     * @return The amount of `token` that can be borrowed.
+     * @param amount The amount of tokens lent.
+     * @param data Arbitrary data structure, intended to contain user-defined parameters.
      */
-    function maxFlashAmount(
-        address token
-    ) external view returns (uint256);
+    function flashLoan(
+        IERC3156FlashBorrower receiver,
+        address token,
+        uint256 amount,
+        bytes calldata data
+    ) external returns (bool);
 }

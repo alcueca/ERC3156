@@ -64,7 +64,7 @@ contract('FlashMinter', (accounts) => {
   it('needs to return funds after a flash loan', async () => {
     await expectRevert(
       borrower.flashBorrowAndSteal(weth.address, 1),
-      'FlashMinter: Flash loan repayment not approved'
+      'FlashMinter: Repay not approved'
     )
   })
 

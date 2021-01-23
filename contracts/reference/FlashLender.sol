@@ -12,6 +12,7 @@ import "../interfaces/IERC3156FlashLender.sol";
  */
 contract FlashLender is IERC3156FlashLender {
 
+    bytes32 public constant CALLBACK_SUCCESS = keccak256("ERC3156FlashBorrower.onFlashLoan");
     mapping(address => bool) public supportedTokens;
     uint256 public fee; //  1 == 0.0001 %.
 
@@ -42,7 +43,7 @@ contract FlashLender is IERC3156FlashLender {
         address token,
         uint256 amount,
         bytes calldata data
-    ) external override {
+    ) external override returns(bool) {
         require(
             supportedTokens[token],
             "FlashLender: Unsupported currency"
@@ -52,11 +53,15 @@ contract FlashLender is IERC3156FlashLender {
             IERC20(token).transfer(address(receiver), amount),
             "FlashLender: Transfer failed"
         );
-        receiver.onFlashLoan(msg.sender, token, amount, fee, data);
+        require(
+            receiver.onFlashLoan(msg.sender, token, amount, fee, data) == CALLBACK_SUCCESS,
+            "FlashLender: Callback failed"
+        );
         require(
             IERC20(token).transferFrom(address(receiver), address(this), amount + fee),
             "FlashLender: Repay failed"
         );
+        return true;
     }
 
     /**

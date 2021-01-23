@@ -1,7 +1,7 @@
 {
   "name": "erc3156",
-  "version": "0.4.2",
-  "description": "Solidity contracts implementing flash lending",
+  "version": "0.4.3",
+  "description": "Reference implementation and interfaces for the ERC3156 flash lending standard",
   "author": "Alberto Cuesta Cañada",
   "engines": {
     "node": ">= 10.12.0",
@@ -9,10 +9,10 @@
     "yarn": ">= 1.10.0"
   },
   "files": [
-    "/contracts/FlashLender.sol",
-    "/contracts/FlashMinter.sol",
-    "/interfaces/IERC3516FlashBorrower.sol",
-    "/interfaces/IERC3516FlashLender.sol"
+    "/contracts/reference/FlashLender.sol",
+    "/contracts/reference/FlashMinter.sol",
+    "/contracts/interfaces/IERC3516FlashBorrower.sol",
+    "/contracts/interfaces/IERC3516FlashLender.sol"
   ],
   "keywords": [
     "solidity",
