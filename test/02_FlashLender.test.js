@@ -34,8 +34,8 @@ contract('FlashLender', (accounts) => {
     flashToken.toString().should.equal(weth.address)
     let flashAmount = await borrower.flashAmount()
     flashAmount.toString().should.equal(new BN('1').toString())
-    let flashSender = await borrower.flashSender()
-    flashSender.toString().should.equal(borrower.address)
+    let flashInitiator = await borrower.flashInitiator()
+    flashInitiator.toString().should.equal(borrower.address)
 
     await borrower.flashBorrow(dai.address, 3, { from: user1 })
 
@@ -47,8 +47,8 @@ contract('FlashLender', (accounts) => {
     flashToken.toString().should.equal(dai.address)
     flashAmount = await borrower.flashAmount()
     flashAmount.toString().should.equal(new BN('3').toString())
-    flashSender = await borrower.flashSender()
-    flashSender.toString().should.equal(borrower.address)
+    flashInitiator = await borrower.flashInitiator()
+    flashInitiator.toString().should.equal(borrower.address)
   })
 
   it('should do a loan that pays fees', async () => {
@@ -68,8 +68,8 @@ contract('FlashLender', (accounts) => {
     flashAmount.toString().should.equal(loan.toString())
     const flashFee = await borrower.flashFee()
     flashFee.toString().should.equal(fee.toString())
-    const flashSender = await borrower.flashSender()
-    flashSender.toString().should.equal(borrower.address)
+    const flashInitiator = await borrower.flashInitiator()
+    flashInitiator.toString().should.equal(borrower.address)
   })
 
   it('needs to return funds after a flash loan', async () => {

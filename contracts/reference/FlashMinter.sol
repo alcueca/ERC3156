@@ -72,19 +72,19 @@ contract FlashMinter is ERC20, IERC3156FlashLender {
             token == address(this),
             "FlashMinter: Unsupported currency"
         );
-        uint256 fee = _flashFee(token, amount);
+        uint256 _fee = _flashFee(token, amount);
         _mint(address(receiver), amount);
         require(
-            receiver.onFlashLoan(msg.sender, token, amount, fee, data) == CALLBACK_SUCCESS,
+            receiver.onFlashLoan(msg.sender, token, amount, _fee, data) == CALLBACK_SUCCESS,
             "FlashMinter: Callback failed"
         );
         uint256 _allowance = allowance(address(receiver), address(this));
         require(
-            _allowance >= (amount + fee),
+            _allowance >= (amount + _fee),
             "FlashMinter: Repay not approved"
         );
-        _approve(address(receiver), address(this), _allowance - (amount + fee));
-        _burn(address(receiver), amount + fee);
+        _approve(address(receiver), address(this), _allowance - (amount + _fee));
+        _burn(address(receiver), amount + _fee);
         return true;
     }
 

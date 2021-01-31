@@ -48,17 +48,17 @@ contract FlashLender is IERC3156FlashLender {
             supportedTokens[token],
             "FlashLender: Unsupported currency"
         );
-        uint256 fee = _flashFee(token, amount);
+        uint256 _fee = _flashFee(token, amount);
         require(
             IERC20(token).transfer(address(receiver), amount),
             "FlashLender: Transfer failed"
         );
         require(
-            receiver.onFlashLoan(msg.sender, token, amount, fee, data) == CALLBACK_SUCCESS,
+            receiver.onFlashLoan(msg.sender, token, amount, _fee, data) == CALLBACK_SUCCESS,
             "FlashLender: Callback failed"
         );
         require(
-            IERC20(token).transferFrom(address(receiver), address(this), amount + fee),
+            IERC20(token).transferFrom(address(receiver), address(this), amount + _fee),
             "FlashLender: Repay failed"
         );
         return true;

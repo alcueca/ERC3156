@@ -29,8 +29,8 @@ contract('FlashMinter', (accounts) => {
     flashToken.toString().should.equal(weth.address)
     const flashAmount = await borrower.flashAmount()
     flashAmount.toString().should.equal(new BN('1').toString())
-    const flashSender = await borrower.flashSender()
-    flashSender.toString().should.equal(borrower.address)
+    const flashInitiator = await borrower.flashInitiator()
+    flashInitiator.toString().should.equal(borrower.address)
   })
 
   it('should do a loan that pays fees', async () => {
@@ -50,8 +50,8 @@ contract('FlashMinter', (accounts) => {
     flashAmount.toString().should.equal(loan.toString())
     const flashFee = await borrower.flashFee()
     flashFee.toString().should.equal(fee.toString())
-    const flashSender = await borrower.flashSender()
-    flashSender.toString().should.equal(borrower.address)
+    const flashInitiator = await borrower.flashInitiator()
+    flashInitiator.toString().should.equal(borrower.address)
   })
 
   it('can not flash loan from an EOA', async () => {

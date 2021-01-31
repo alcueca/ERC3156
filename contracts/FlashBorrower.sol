@@ -12,7 +12,7 @@ contract FlashBorrower is IERC3156FlashBorrower {
     IERC3156FlashLender lender;
 
     uint256 public flashBalance;
-    address public flashSender;
+    address public flashInitiator;
     address public flashToken;
     uint256 public flashAmount;
     uint256 public flashFee;
@@ -22,11 +22,11 @@ contract FlashBorrower is IERC3156FlashBorrower {
     }
 
     /// @dev ERC-3156 Flash loan callback
-    function onFlashLoan(address sender, address token, uint256 amount, uint256 fee, bytes calldata data) external override returns(bytes32) {
+    function onFlashLoan(address initiator, address token, uint256 amount, uint256 fee, bytes calldata data) external override returns(bytes32) {
         require(msg.sender == address(lender), "FlashBorrower: Untrusted lender");
-        require(sender == address(this), "FlashBorrower: External loan initiator");
+        require(initiator == address(this), "FlashBorrower: External loan initiator");
         (Action action) = abi.decode(data, (Action)); // Use this to unpack arbitrary data
-        flashSender = sender;
+        flashInitiator = initiator;
         flashToken = token;
         flashAmount = amount;
         flashFee = fee;
