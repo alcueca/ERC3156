@@ -99,7 +99,7 @@ contract FlashLender is IERC3156FlashLender {
      * @param token The loan currency.
      * @return The amount of `token` that can be borrowed.
      */
-    function maxFlashAmount(
+    function maxFlashLoan(
         address token
     ) external view override returns (uint256) {
         return supportedTokens[token] ? IERC20(token).balanceOf(address(this)) : 0;

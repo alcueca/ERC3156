@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
 /// ERC20.sol -- ERC20 implementation with minting and burning
 // Inspired on token.sol from DappHub
 
