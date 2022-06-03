@@ -14,7 +14,7 @@ contract FlashLender is IERC3156FlashLender {
 
     bytes32 public constant CALLBACK_SUCCESS = keccak256("ERC3156FlashBorrower.onFlashLoan");
     mapping(address => bool) public supportedTokens;
-    uint256 public fee; //  1 == 0.0001 %.
+    uint256 public fee; //  1 == 0.01 %.
 
 
     /**
