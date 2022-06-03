@@ -14,7 +14,7 @@ import "../interfaces/IERC3156FlashLender.sol";
 contract FlashMinter is ERC20, IERC3156FlashLender {
 
     bytes32 public constant CALLBACK_SUCCESS = keccak256("ERC3156FlashBorrower.onFlashLoan");
-    uint256 public fee; //  1 == 0.0001 %.
+    uint256 public fee; //  1 == 0.01 %.
 
     /**
      * @param fee_ The percentage of the loan `amount` that needs to be repaid, in addition to `amount`.
